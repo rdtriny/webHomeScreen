@@ -27,6 +27,7 @@
 		if(this.dragable){
 			this.drag();
 		}
+		this.isWidgetShow = false;
 	};
 	base.prototype = {
 		appStyle: null,
@@ -38,12 +39,14 @@
 		dbclickInterval: null,
 		lastClickTime: 0,
 		appsPerRow: 4,
-		appsPerColumn: 1,
+		appsPerColumn: 2,
 		appsCount: 0,
 		pagesCount: 0,
 		currentPageIndex: 0,
 		movedDistance: 0,
-		moveStartX:0,
+		moveStartX: 0,
+		endX: 0,
+		endY: 0,
 		touchstart: function(e){
 			this.startX = e.touches[0].pageX;
 			this.startY = e.touches[0].pageY;
@@ -51,27 +54,51 @@
 			this.longtapTime = new Date;
 			var that = this;
 			this.longTapInterval = setTimeout(function(){
+				e.stopPropagation();
 				var event = document.createEvent("Events");
 				event.initEvent("longtap", true, true);
 				e.target.dispatchEvent(event);
 				that.longtapStart = true;
-			}, 1000);
+			}, 800);
+			console.log(e.touches.length);
 		},
 		touchmove: function(e){
-			if(!this.longtapStart){
-				clearTimeout(this.longTapInterval);	
+			if(!this.longtapStart && !this.isWidgetShow){
+				clearTimeout(this.longTapInterval);
 				var pagex = e.touches[0].pageX;
 				var pagey = e.touches[0].pageY;
 				var x = pagex-this.startX + this.moveStartX;
 				var dis = {x:x, y:0};
 				this.css3move(this.container, dis, 200);
 				this.movedDistance = pagex-this.startX;
+				this.endX = pagex;
+				this.endY = pagey;
 			}
 		},
 		touchend: function(e){
-			this.longtapStart = false;
-			if(this.longtapTime - new Date < 1000){
+			if(!this.longtapStart){
 				clearTimeout(this.longTapInterval);
+				if(this.endX){
+					if(Math.abs(this.endX-this.startX) > Math.abs(this.endY-this.startY)){
+						if(this.endX > this.startX){
+							var direction = "right";
+						}else{
+							direction = "left";
+						}
+					}else{
+						if(this.endY > this.startY){
+							var direction = "down";
+						}else{
+							direction = "up";
+						}
+					}
+					var swipe = document.createEvent("Events");
+					swipe.initEvent("swipe", true, true);
+					swipe.data = {};
+					swipe.data.direction = direction;
+					e.target.dispatchEvent(swipe);
+					this.endX = 0;
+				}
 			}
 			var now = new Date;
 			if(now - this.lastClickTime<200){
@@ -83,18 +110,15 @@
 			
 			var pageWidth = document.getElementById("appScreen").clientWidth;
 			var percent = this.movedDistance / pageWidth;
-			console.log(percent);
 			
-			if(Math.abs(percent) > 0.06){
+			if(Math.abs(percent) > 0.06  && !this.isWidgetShow){
 				if(percent>0 && this.currentPageIndex>0){
 					var x = (this.currentPageIndex-1)*pageWidth*-1;
 					this.currentPageIndex -= 1;
-					console.log("right");
 				}
 				else if(percent<0 && this.currentPageIndex<this.pagesCount-1){
 					x = (this.currentPageIndex+1)*pageWidth*-1;
 					this.currentPageIndex += 1;
-					console.log("left");
 				}
 				else {
 					x = this.currentPageIndex*pageWidth*-1;
@@ -105,7 +129,8 @@
 				x = this.currentPageIndex*pageWidth*-1;
 			}			
 			this.moveStartX = x;
-			this.css3move(this.container, {x:x, y:0}, 200);
+			this.css3move(this.container, {x:x, y:0}, 200);			
+			this.longtapStart = false;
 		},
 		click: function(e){
 			var target = e.target;
@@ -187,10 +212,11 @@
 						}
 						that.container.ontouchmove = null;
 						that.container.ontouchend = null;
-						var tmpNode = target.cloneNode(true);
-						console.log(document.getElementsByClassName("page").length);
-						document.getElementsByClassName("page")[that.currentPageIndex].removeChild(target);
-						document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);
+						var tmpNode = target.cloneNode(true);						
+						if(target.id != icon[icon.length-1].id){
+							document.getElementsByClassName("page")[that.currentPageIndex].removeChild(target);
+							document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);
+						}
 					}
 				}
 			}, false);
@@ -406,9 +432,10 @@ var spriteMovie = (function(){
 	return spriteMovie;
 })();
 
+
 //for test.
 setTimeout(function(){
-var a = new Base("iconsContainer",{dragable:true});
+window.a = new Base("iconsContainer",{dragable:true});
 a.register({title:"cloud",packageName:"com.orange.cloud",imgSrc:"./ihome/music.png",widget:""})
 a.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./ihome/facebook.png",widget:""})
 a.register({title:"facebook",packageName:"com.orange.movie",imgSrc:"./ihome/movie.png",widget:""})
@@ -419,10 +446,11 @@ a.register({title:"facebook",packageName:"com.orange.tv",imgSrc:"./ihome/tv.png"
 a.register({title:"facebook",packageName:"com.orange.weather",imgSrc:"./ihome/message.png",widget:""})
 a.register({title:"facebook",packageName:"com.orange.message",imgSrc:"./ihome/weather.png",widget:"./widget/weather.js"})
 }, 2000);
-window.addEventListener("dbclick", function(e){
-	console.log(e.target.id+"         dbclick");
+
+window.addEventListener("gestureend", function(){
+	console.log("getsteure");
 }, false);
-window.addEventListener("longtap", function(e){
-	console.log(e.target.id+"         logntap");
-	e.preventDefault();
+
+window.addEventListener("swipe", function(e){
+	console.log(e.data.direction);
 }, false);
