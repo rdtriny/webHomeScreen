@@ -1,9 +1,9 @@
 (function(el){
-	var comOrangeWeather = "<div id='flash' style='position:absolute;z-index:30;margin-top:-40px;display:none'><div id='info' style='width:60%;height:100%;float:left;text-align:left;padding-left:15px;padding-top:40px;font-family:Arial,Helvetica,sans-serif;color:rgb(255,253,255);opacity:0;-webkit-transform-origin:0px 40px;-webkit-transform:rotate(90deg)'><h3 style='line-height:0px;font-size:1em;font-weight:normal'>Beijing</h3><h2 style='line-height:0px;font-size:1.5em;position:relative;font-weight:normal'>Rain  28&deg;C</h2><p style='line-height:0px;font-size:0.8em;position:relative;top:-5px'>Wind: NW at 3 mph</p><p style='line-height:0px;font-size:0.8em;position:relative;top:-3px'>23&deg;C - 28&deg;C</p></div><div id='pic' style='width:40%;height:100%;position:absolute;text-align:left;right:-5px;top:55px;opacity:0'><img src='./ihome/cloud.png' style='width:80%;display:block'></img><img src='./ihome/raindrop.png' style='width:10%;position:relative;left:15px'></img><img src='./ihome/raindrop.png' style='width:10%;position:relative;left:30px'></img><img src='./ihome/raindrop.png' style='width:10%;position:relative;top:15px'></img>	<img src='./ihome/raindrop.png' style='width:10%;position:relative;top:15px;left:10px'></img></div><div id='futureWeather' style='position:absolute;top:130px;left:15px;font-size:0.9em;display:none;opacity:0'><table style='color:rgb(255,253,255);line-height:1em'><tr><td style='width:35px'>Sat</td><td style='width:35px'>Sun</td><td style='width:35px'>Mon</td><td style='width:35px'>Tue</td>	<td style='width:35px'>Wen</td>	</tr><tr><td><img src='./ihome/weather1.png' style='width:30px'></img></td><td><img src='./ihome/weather1.png' style='width:30px'></img></td><td><img src='./ihome/weather1.png' style='width:30px'></img></td><td><img src='./ihome/weather1.png' style='width:30px'></img></td><td><img src='./ihome/weather1.png' style='width:30px'></img></td></tr><tr><td style='background-color:rgb(255,253,255);color:#ff6600'>27&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>32&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>33&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>29&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>28&deg;C</td></tr></table></div></div>";
+	var comOrangeWeather = "<div id='flash' style='position:absolute;z-index:30;margin-top:-40px;display:none'><div id='info' style='width:60%;height:100%;float:left;text-align:left;padding-left:15px;padding-top:40px;font-family:Arial,Helvetica,sans-serif;color:rgb(255,253,255);opacity:0;-webkit-transform-origin:0px 40px;-webkit-transform:rotate(90deg)'><h3 style='line-height:0px;font-size:1em;font-weight:normal'>Beijing</h3><h2 style='line-height:0px;font-size:1.5em;position:relative;font-weight:normal'>Rain  28&deg;C</h2><p style='line-height:0px;font-size:0.8em;position:relative;top:-5px'>Wind: NW at 3 mph</p><p style='line-height:0px;font-size:0.8em;position:relative;top:-3px'>23&deg;C - 28&deg;C</p></div><div id='pic' style='width:40%;height:100%;position:absolute;text-align:left;right:-5px;top:55px;opacity:0'><img src='./images/cloud.png' style='width:80%;display:block'></img><img src='./images/raindrop.png' style='width:10%;position:relative;left:15px'></img><img src='./images/raindrop.png' style='width:10%;position:relative;left:30px'></img><img src='./images/raindrop.png' style='width:10%;position:relative;top:15px'></img>	<img src='./images/raindrop.png' style='width:10%;position:relative;top:15px;left:10px'></img></div><div id='futureWeather' style='position:absolute;top:130px;left:15px;font-size:0.9em;display:none;opacity:0'><table style='color:rgb(255,253,255);line-height:1em'><tr><td style='width:35px'>Sat</td><td style='width:35px'>Sun</td><td style='width:35px'>Mon</td><td style='width:35px'>Tue</td>	<td style='width:35px'>Wen</td>	</tr><tr><td><img src='./images/weather1.png' style='width:30px'></img></td><td><img src='./images/weather1.png' style='width:30px'></img></td><td><img src='./images/weather1.png' style='width:30px'></img></td><td><img src='./images/weather1.png' style='width:30px'></img></td><td><img src='./images/weather1.png' style='width:30px'></img></td></tr><tr><td style='background-color:rgb(255,253,255);color:#ff6600'>27&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>32&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>33&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>29&deg;C</td><td style='background-color:rgb(255,253,255);color:#ff6600'>28&deg;C</td></tr></table></div></div>";
 	var div = document.createElement("div");
 	div.innerHTML = comOrangeWeather;
 	document.getElementsByClassName("page")[pageIndex-1].appendChild(div.firstChild);
-	var imgSrc = "./ihome/sprite1.png";	
+	var imgSrc = "./images/sprite1.png";	
 	var flashWindow = document.getElementById("flash");
 	flashWindow.style.top = 0;
 	console.log(pageIndex);
@@ -13,9 +13,11 @@
 	
 	var movieArray2 = [{left:0,top:0},{left:240,top:0},{left:480,top:0},{left:720,top:0},{left:960,top:0}];
 	var SM;
-	var isShown = false;
-	
+	var isShown = false;	
+	var infoEl = document.getElementById("info");
+	infoEl.style.webkitTransform = "rotate(90deg)";
 	el.onclick = function(){
+		a.yield(this.getAttribute("elPos"), "right", 3);
 		flashWindow.style.display = "block";
 		SM = new spriteMovie(imgSrc, flashWinCon, movieArray);
 		if(flashWindow.isClickLocked)
@@ -24,28 +26,31 @@
 			disapear();
 		}
 		else{
-			stretchTo3();
+			setTimeout(function(){			
+				stretchTo3();
+				a.isWidgetShow = true;
+			},100);
 		}
 	}
 	
 	function disapear(){
 		SM.rewind(24);
 		isShown = false;
-		var infoEl = document.getElementById("info");
 		infoEl.style.webkitTransform = "rotate(90deg)";
 		infoEl.style.opacity = "0";
 		infoEl.style.webkitTransitionDuration = '600ms';
 		document.getElementById("pic").style.opacity = "0";
 		clearInterval(window.raindrop);
 		setTimeout(function(){
+			a.withdraw(el.getAttribute("elPos"), "left", 3);
 			flashWindow.style.display = "none";
-		},700);
+			a.isWidgetShow = false;
+		},800);
 	}
 			
 	function stretchTo3(){
 		SM.play(24);
 		isShown = true;
-		var infoEl = document.getElementById("info");
 		infoEl.style.webkitTransform = "rotate(0deg)";
 		infoEl.style.opacity = "0.9";
 		infoEl.style.webkitTransitionDuration = '600ms';
@@ -85,11 +90,12 @@
 	}
 	flashWindow.ontouchend = function(e){
 		if(this.wipeDirection === "up" && this.isClickLocked){
-			var SM2 = new spriteMovie("./ihome/sprite2.png", {el:flashWindow, width:240, height:260}, movieArray2);
+			var SM2 = new spriteMovie("./images/sprite2.png", {el:flashWindow, width:240, height:260}, movieArray2);
 			SM2.callback = function(){
 				SM = new spriteMovie(imgSrc, flashWinCon, movieArray);
 				disapear();
 			};
+			a.withdraw(el.getAttribute("elPos"), "up", 3);
 			SM2.rewind(18);
 			document.getElementById("futureWeather").style.display = "none";				
 			document.getElementById("futureWeather").style.opacity = "0";				
@@ -97,7 +103,8 @@
 			isShown = false;
 		}
 		else if(this.wipeDirection === "down" && isShown){
-			SM = new spriteMovie("./ihome/sprite2.png", {el:flashWindow, width:240, height:260}, movieArray2);
+			a.yield(el.getAttribute("elPos"), "down", 3);
+			SM = new spriteMovie("./images/sprite2.png", {el:flashWindow, width:240, height:260}, movieArray2);
 			SM.play(18);
 			document.getElementById("futureWeather").style.display = "block";
 			var i = 0;

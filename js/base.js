@@ -39,7 +39,7 @@
 		dbclickInterval: null,
 		lastClickTime: 0,
 		appsPerRow: 4,
-		appsPerColumn: 2,
+		appsPerColumn: 5,
 		appsCount: 0,
 		pagesCount: 0,
 		currentPageIndex: 0,
@@ -149,7 +149,8 @@
 			}else{
 				appNode = document.createElement("div");
 				appNode.className = "icon";
-				appNode.id = app.packageName;
+				appNode.id = app.packageName;				
+				appNode.setAttribute("elPos", this.appsCount);
 				
 				var img = document.createElement("img");
 				img.src = app.imgSrc;
@@ -323,6 +324,85 @@
 				}
 			}
 			return false;
+		},
+		yield: function(elPos, direction, blockNum){
+			elPos -= 1;
+			var icons = document.getElementsByClassName("icon");
+			if(direction == "down"){
+				for(var i=1; i<blockNum; i++){
+						if(icons[elPos+i])
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+20)+"%";
+				}
+				while(icons[elPos]){
+					for(var i=0; i<blockNum; i++){
+						if(icons[elPos+4+i]){
+							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)+20)+"%";
+						}
+					}
+					elPos += 4;
+				}
+			}
+			else if(direction == "right"){
+				while(icons[elPos]){
+					for(var i=1; i<blockNum; i++){
+						if(icons[elPos+i])
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+20)+"%";
+					}
+					elPos += 4;
+				}
+			}
+			else if(direction == "left"){
+				while(icons[elPos]){
+					for(var i=blockNum-1; i>0; i--){
+						if(icons[elPos-i])
+							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)+20)+"%";
+					}
+					elPos += 4;
+				}
+			}
+		},
+		toNum: function(arg){
+			var result = parseFloat(arg);
+			if(isNaN(result)){
+				result = 0;
+			}
+			return result;
+		},
+		withdraw: function(elPos, direction, blockNum){
+			elPos -= 1;
+			var icons = document.getElementsByClassName("icon");
+			if(direction == "up"){
+				for(var i=1; i<blockNum; i++){
+						if(icons[elPos+i])
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-20)+"%";
+				}
+				while(icons[elPos]){
+					for(var i=0; i<blockNum; i++){
+						if(icons[elPos+4+i]){
+							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)-20)+"%";
+						}
+					}
+					elPos += 4;
+				}
+			}
+			else if(direction == "left"){
+				while(icons[elPos]){
+					for(var i=1; i<blockNum; i++){
+						if(icons[elPos+i])
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-20)+"%";
+					}
+					elPos += 4;
+				}
+			}
+			else if(direction == "right"){
+				while(icons[elPos]){
+					for(var i=blockNum-1; i>0; i--){
+						if(icons[elPos-i])
+							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)-20)+"%";
+					}
+					elPos += 4;
+				}
+			}
 		}
 	};
 	return base;
@@ -436,15 +516,15 @@ var spriteMovie = (function(){
 //for test.
 setTimeout(function(){
 window.a = new Base("iconsContainer",{dragable:true});
-a.register({title:"cloud",packageName:"com.orange.cloud",imgSrc:"./ihome/music.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./ihome/facebook.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.movie",imgSrc:"./ihome/movie.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.twitter",imgSrc:"./ihome/twitter.png",widget:""})
-a.register({title:"cloud",packageName:"com.orange.rss",imgSrc:"./ihome/rss.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.alarm",imgSrc:"./ihome/alarm.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.tv",imgSrc:"./ihome/tv.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.weather",imgSrc:"./ihome/message.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.message",imgSrc:"./ihome/weather.png",widget:"./widget/weather.js"})
+a.register({title:"facebook",packageName:"com.orange.message",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
+a.register({title:"cloud",packageName:"com.orange.cloud",imgSrc:"./images/music.png",widget:""})
+a.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
+a.register({title:"facebook",packageName:"com.orange.movie",imgSrc:"./images/movie.png",widget:""})
+a.register({title:"facebook",packageName:"com.orange.twitter",imgSrc:"./images/twitter.png",widget:""})
+a.register({title:"cloud",packageName:"com.orange.rss",imgSrc:"./images/rss.png",widget:""})
+a.register({title:"facebook",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
+a.register({title:"facebook",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
+a.register({title:"facebook",packageName:"com.orange.weather",imgSrc:"./images/message.png",widget:""})
 }, 2000);
 
 window.addEventListener("gestureend", function(){

@@ -31,7 +31,7 @@
 	margin: 0;
 	-webkit-transition-duration: .5s;
 	-webkit-transition-timing-function: cubic-bezier(0.33,0.66,0.66,1);
-	background: url("ihome/bg.png") no-repeat top left;
+	background: url("../images/bg.png") no-repeat top left;
 	background-size: 100% 100%;
 }
 .page {
@@ -50,7 +50,9 @@
 	position: relative;
 	float: left;
 	padding: 0;
-	margin: 0;
+	margin: 0;	
+	-webkit-transition-duration: .5s;
+	-webkit-transition-timing-function: cubic-bezier(0.33,0.66,0.66,1);	
 }
 .icon img {
 	width: 120%;
