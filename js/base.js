@@ -194,29 +194,25 @@
 						
 						var row = Math.round(pagey/iconHeight); //20% height
 						var column = Math.round(pagex/iconWidth); //25% width
-						var startRow = Math.round(that.pageY/iconHeight);
-						var startColumn = Math.round(that.pageX/iconWidth);
 						target.style.left= (pagex-that.startX) + "px";
 						target.style.top = (pagey-that.startY) + "px";
-						if(row!=startRow || column!=startColumn){
-							row = row||1;
-							to = (row-1)*4+column;
-							that.switchNode(target, (row-1)*4+column);
-						}
+						row = row||1;
+						to = (row-1)*4+column;
+						that.switchNode(target, to);
 					};
 					that.container.ontouchend = function(e){
 						var icon = document.getElementsByClassName("icon");
-						target.style.webkitTransform = "";
-						for(var i=0; i<icon.length; i++){
-							icon[i].style.left="";
-							icon[i].style.top ="";
-						}
+						target.style.webkitTransform = "";						
 						that.container.ontouchmove = null;
 						that.container.ontouchend = null;
 						var tmpNode = target.cloneNode(true);						
-						if(target.id != icon[icon.length-1].id){
+						if(target.id != icon[icon.length-1].id || to!=icon.length){
 							document.getElementsByClassName("page")[that.currentPageIndex].removeChild(target);
 							document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);
+						}
+						for(var i=0; i<icon.length; i++){
+							icon[i].style.left="";
+							icon[i].style.top ="";
 						}
 					}
 				}
@@ -231,6 +227,9 @@
 			for(var i=0; i<len; i++){
 				if(node.id == icon[i].id){
 					from = i+1;
+				}else{					
+					icon[i].style.left = "";
+					icon[i].style.top = "";
 				}
 			}
 			if(from < to){
@@ -241,15 +240,19 @@
 					}else{
 						icon[i].style.left="-25%";
 					}
+					var elPos = this.toNum(icon[i].getAttribute("elPos"));
+					//icon[i].setAttribute("elPos", elPos-1);
 				}
 			}else{
 				for(var i=to-1; i<from-1; i++){
-					if(i%4==0){
+					if(i%4==3){
 						icon[i].style.left="-75%";
 						icon[i].style.top ="20%";
 					}else{
 						icon[i].style.left="25%";
 					}
+					var elPos = this.toNum(icon[i].getAttribute("elPos"));
+					//icon[i].setAttribute("elPos", elPos+1);
 				}
 			}
 		},
