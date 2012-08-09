@@ -21,6 +21,9 @@
 		this.container.addEventListener("touchend", function(e){
 			that.touchend(e);
 		}, false);
+		this.container.addEventListener("touchcancel", function(e){
+			that.touchcancel(e);
+		}, false);
 		this.container.addEventListener("click", function(e){
 			that.click(e);
 		}, false);
@@ -59,23 +62,24 @@
 				event.initEvent("longtap", true, true);
 				e.target.dispatchEvent(event);
 				that.longtapStart = true;
-			}, 800);
+			}, 1000);
 		},
 		touchmove: function(e){
-			if(!this.longtapStart && !this.isWidgetShow){
+			if((new Date)-this.longtapTime < 1000){
 				clearTimeout(this.longTapInterval);
 				var pagex = e.touches[0].pageX;
 				var pagey = e.touches[0].pageY;
 				var x = pagex-this.startX + this.moveStartX;
 				var dis = {x:x, y:0};
-				this.css3move(this.container, dis, 200);
+				if(!this.isWidgetShow)
+					this.css3move(this.container, dis, 200);
 				this.movedDistance = pagex-this.startX;
 				this.endX = pagex;
 				this.endY = pagey;
 			}
 		},
 		touchend: function(e){
-			if(!this.longtapStart){
+			if((new Date)-this.longtapTime < 1000){
 				clearTimeout(this.longTapInterval);
 				if(this.endX){
 					if(Math.abs(this.endX-this.startX) > Math.abs(this.endY-this.startY)){
@@ -96,6 +100,7 @@
 					swipe.data = {};
 					swipe.data.direction = direction;
 					e.target.dispatchEvent(swipe);
+					console.log(e.target.nodeName);
 					this.endX = 0;
 				}
 			}
@@ -129,6 +134,9 @@
 			this.moveStartX = x;
 			this.css3move(this.container, {x:x, y:0}, 200);			
 			this.longtapStart = false;
+		},
+		touchcancel: function(e){
+			this.touchend(e);
 		},
 		click: function(e){
 			var target = e.target;
@@ -403,7 +411,8 @@
 					elPos += 4;
 				}
 			}
-		}
+		},
+		
 	};
 	return base;
 })(window);
@@ -515,16 +524,16 @@ var spriteMovie = (function(){
 
 //for test.
 setTimeout(function(){
-window.a = new Base("iconsContainer",{dragable:true});
-a.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
-a.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
-a.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
-a.register({title:"movie",packageName:"com.orange.movie",imgSrc:"./images/movie.png",widget:""})
-a.register({title:"twitter",packageName:"com.orange.twitter",imgSrc:"./images/twitter.png",widget:""})
-a.register({title:"rss",packageName:"com.orange.rss",imgSrc:"./images/rss.png",widget:""})
-a.register({title:"alarm",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
-a.register({title:"tv",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
-a.register({title:"message",packageName:"com.orange.message",imgSrc:"./images/message.png",widget:""})
+window.system = new Base("iconsContainer",{dragable:true});
+system.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
+system.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
+system.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
+system.register({title:"movie",packageName:"com.orange.movie",imgSrc:"./images/movie.png",widget:""})
+system.register({title:"twitter",packageName:"com.orange.twitter",imgSrc:"./images/twitter.png",widget:""})
+system.register({title:"rss",packageName:"com.orange.rss",imgSrc:"./images/rss.png",widget:""})
+system.register({title:"alarm",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
+system.register({title:"tv",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
+system.register({title:"message",packageName:"com.orange.message",imgSrc:"./images/message.png",widget:""})
 }, 2000);
 
 window.addEventListener("gestureend", function(){
