@@ -2,7 +2,7 @@ This is a web based android application launcher.
 ==============
 This framework includes 
 --------------
-Application management system:
+Applications management system:
 
 
 	1. Add applications
@@ -11,28 +11,31 @@ Application management system:
 	4. application's paging system.
 	5. launch apps (under developement)
 	
-Widget management system:
+Widgets management system:
 
 
 	1. Add widgets
 	2. remove widgets
 	
-Event system:
+Events system:
 
 
 	Normal:
 		1. touchstart
 		2. touchmove
 		3. touchend
-		4. click
+		4. touchcacel
+		5. click
 	special:
-		1. longtap
+		1. longtap (also named as hold)
 		2. dbclick
 		3. orientationchange
 		4. resize
 		5. cache releated
+		6. drag
+		7. swipe
 		
-Notifacation system:
+Notifacations system:
 
 
 	under developement.
