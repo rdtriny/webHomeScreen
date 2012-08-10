@@ -12,32 +12,19 @@
 	
 	var movieArray2 = [{left:0,top:0},{left:240,top:0},{left:480,top:0},{left:720,top:0},{left:960,top:0}];
 	var SM;
-	var isShown = false;	
+	var isShown3 = false, isShown6 = false;	
 	var infoEl = document.getElementById("info");
 	infoEl.style.webkitTransform = "rotate(90deg)";
-	el.onclick = function(){
-		console.log(this.getAttribute("elPos"));
-		system.yield(this.getAttribute("elPos"), "right", 3);
-		flashWindow.style.display = "block";
-		SM = new spriteMovie(imgSrc, flashWinCon, movieArray);
-		if(flashWindow.isClickLocked)
-			return ;			
-		setTimeout(function(){			
-			stretchTo3();
-			system.isWidgetShow = true;
-		},100);
-	}
-	
 	function disapear(){
 		SM.rewind(24);
-		isShown = false;
+		isShown3 = false;
 		infoEl.style.webkitTransform = "rotate(90deg)";
 		infoEl.style.opacity = "0";
 		infoEl.style.webkitTransitionDuration = '600ms';
 		document.getElementById("pic").style.opacity = "0";
 		clearInterval(window.raindrop);
 		setTimeout(function(){
-			system.withdraw(el.getAttribute("elPos"), "left", 3);
+			system.withdraw("left", 3);
 			flashWindow.style.display = "none";
 			system.isWidgetShow = false;
 		},800);
@@ -45,7 +32,7 @@
 			
 	function stretchTo3(){
 		SM.play(24);
-		isShown = true;
+		isShown3 = true;
 		infoEl.style.webkitTransform = "rotate(0deg)";
 		infoEl.style.opacity = "0.9";
 		infoEl.style.webkitTransitionDuration = '600ms';
@@ -60,6 +47,29 @@
 			}
 		}, 500);
 	}
+	
+	window.onclick = function(e){
+		if(/[A-z0-9]+\./ig.test(e.target.id) || /[A-z0-9]+\./ig.test(e.target.parentNode.id)){
+			var pagex = e.pageX, pagey = e.pageY;
+			var icon = document.getElementsByClassName("icon")[0];
+			var iconHeight = icon.clientHeight;
+			var iconWidth = icon.clientWidth;
+			var row = Math.floor(pagey/iconHeight);
+			var column = Math.floor(pagex/iconWidth);
+			console.log("row             " + row + "              column  "+column);
+			flashWindow.style.top = row*20 + "%";
+			flashWindow.style.left = column*25 + "%";
+			system.yield("right", 3);
+			flashWindow.style.display = "block";
+			SM = new spriteMovie(imgSrc, flashWinCon, movieArray);
+			if(flashWindow.isClickLocked)
+				return ;			
+			setTimeout(function(){			
+				stretchTo3();
+				system.isWidgetShow = true;
+			},100);
+		}
+	}
 	flashWindow.addEventListener("swipe", function(e){
 		if(e.data.direction === "up" && this.isClickLocked){
 			var SM2 = new spriteMovie("./images/sprite2.png", {el:flashWindow, width:240, height:260}, movieArray2);
@@ -67,15 +77,17 @@
 				SM = new spriteMovie(imgSrc, flashWinCon, movieArray);
 				disapear();
 			};
-			system.withdraw(el.getAttribute("elPos"), "up", 3);
+			system.withdraw("up", 3);
 			SM2.rewind(18);
 			document.getElementById("futureWeather").style.display = "none";				
 			document.getElementById("futureWeather").style.opacity = "0";				
 			this.isClickLocked = false;
-			isShown = false;
+			isShown3 = false;
+			isShown6 = false;
 		}
-		else if(e.data.direction === "down" && isShown){
-			system.yield(el.getAttribute("elPos"), "down", 3);
+		else if(e.data.direction === "down" && isShown3 && !isShown6){
+			isShown6 = true;
+			system.yield("down", 3);
 			SM = new spriteMovie("./images/sprite2.png", {el:flashWindow, width:240, height:260}, movieArray2);
 			SM.play(18);
 			document.getElementById("futureWeather").style.display = "block";
@@ -87,7 +99,7 @@
 					clearInterval(inter);
 			}, 100);
 			this.isClickLocked = true;
-		}else if(e.data.direction === "left" &&isShown){
+		}else if(e.data.direction === "left" &&isShown3){
 			disapear();
 		}
 	}, false);
