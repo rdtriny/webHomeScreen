@@ -36,7 +36,7 @@
 		appStyle: null,
 		startX: 0,
 		startY: 0,
-		longTapInterval: null,
+		longTapIndex: null,
 		longtapStart: false,
 		longtapTime: 0,
 		dbclickInterval: null,
@@ -48,15 +48,17 @@
 		currentPageIndex: 0,
 		movedDistance: 0,
 		moveStartX: 0,
+		moveStartY: 0,
 		endX: 0,
 		endY: 0,
+		isVertical: false,
 		touchstart: function(e){
 			this.startX = e.touches[0].pageX;
 			this.startY = e.touches[0].pageY;
 			
 			this.longtapTime = new Date;
 			var that = this;
-			this.longTapInterval = setTimeout(function(){
+			this.longTapIndex = setTimeout(function(){
 				e.stopPropagation();
 				var event = document.createEvent("Events");
 				event.initEvent("longtap", true, true);
@@ -66,21 +68,26 @@
 		},
 		touchmove: function(e){
 			if((new Date)-this.longtapTime < 1000){
-				clearTimeout(this.longTapInterval);
-				var pagex = e.touches[0].pageX;
-				var pagey = e.touches[0].pageY;
-				var x = pagex-this.startX + this.moveStartX;
-				var dis = {x:x, y:0};
+				clearTimeout(this.longTapIndex);
+				var pagex = this.endX = e.touches[0].pageX;
+				var pagey = this.endY = e.touches[0].pageY;
+				if(this.isVertical){
+					var y = this.startY-pagey + this.moveStartY;
+					var dis = {x:0, y:y};
+					this.movedDistance = pagey-this.startY;
+				}
+				else{
+					var x = pagex-this.startX + this.moveStartX;
+					var dis = {x:x, y:0};
+					this.movedDistance = pagex-this.startX;					
+				}
 				if(!this.isWidgetShow)
 					this.css3move(this.container, dis, 200);
-				this.movedDistance = pagex-this.startX;
-				this.endX = pagex;
-				this.endY = pagey;
 			}
 		},
 		touchend: function(e){
 			if((new Date)-this.longtapTime < 1000){
-				clearTimeout(this.longTapInterval);
+				clearTimeout(this.longTapIndex);
 				if(this.endX){
 					if(Math.abs(this.endX-this.startX) > Math.abs(this.endY-this.startY)){
 						if(this.endX > this.startX){
@@ -103,6 +110,7 @@
 					this.endX = 0;
 				}
 			}
+			
 			var now = new Date;
 			if(now - this.lastClickTime<200){
 				var event = document.createEvent("Events");
@@ -111,27 +119,50 @@
 			}
 			this.lastClickTime = now;
 			
-			var pageWidth = document.getElementById("appScreen").clientWidth;
-			var percent = this.movedDistance / pageWidth;
-			
-			if(Math.abs(percent) > 0.06  && !this.isWidgetShow){
-				if(percent>0 && this.currentPageIndex>0){
-					var x = (this.currentPageIndex-1)*pageWidth*-1;
-					this.currentPageIndex -= 1;
+			if(this.isVertical){
+				var pageHeight = document.getElementById("appScreen").clientHeight;
+				var percent = this.movedDistance / pageHeight;
+				if(Math.abs(percent) > 0.06  && !this.isWidgetShow){
+					if(percent>0 && this.currentPageIndex>0){
+						var y = (this.currentPageIndex-1)*pageHeight;
+						this.currentPageIndex -= 1;
+					}
+					else if(percent<0 && this.currentPageIndex<this.pagesCount-1){
+						y = (this.currentPageIndex+1)*pageHeight;
+						this.currentPageIndex += 1;
+					}
+					else {
+						y = this.currentPageIndex*pageHeight;
+					}
 				}
-				else if(percent<0 && this.currentPageIndex<this.pagesCount-1){
-					x = (this.currentPageIndex+1)*pageWidth*-1;
-					this.currentPageIndex += 1;
+				else {
+					y = this.currentPageIndex*pageHeight;
+				}			
+				this.moveStartY = y;
+				this.css3move(this.container, {x:0, y:y}, 200);	
+			}
+			else{
+				var pageWidth = document.getElementById("appScreen").clientWidth;
+				percent = this.movedDistance / pageWidth;				
+				if(Math.abs(percent) > 0.06  && !this.isWidgetShow){
+					if(percent>0 && this.currentPageIndex>0){
+						var x = (this.currentPageIndex-1)*pageWidth*-1;
+						this.currentPageIndex -= 1;
+					}
+					else if(percent<0 && this.currentPageIndex<this.pagesCount-1){
+						x = (this.currentPageIndex+1)*pageWidth*-1;
+						this.currentPageIndex += 1;
+					}
+					else {
+						x = this.currentPageIndex*pageWidth*-1;
+					}
 				}
 				else {
 					x = this.currentPageIndex*pageWidth*-1;
-				}
-			}
-			else {
-				x = this.currentPageIndex*pageWidth*-1;
-			}			
-			this.moveStartX = x;
-			this.css3move(this.container, {x:x, y:0}, 200);			
+				}			
+				this.moveStartX = x;				
+				this.css3move(this.container, {x:x, y:0}, 200);	
+			}		
 			this.longtapStart = false;
 		},
 		touchcancel: function(e){
@@ -278,6 +309,8 @@
 			el.style.webkitBackfaceVisiblity = 'hidden';
 			el.style.webkitTransformStyle = 'preserve-3d';
 			el.style.webkitTransitionTimingFunction = 'cubic-bezier(0.33,0.66,0.66,1)';
+			
+			console.log(distance.y);
 		},
 		//manage the pages which is hosting app icons. inc for increment
 		managePages: function(inc){
@@ -295,12 +328,19 @@
 					this.container.removeChild(pages[this.pagesCount+i]);
 				}
 			}
-			
-			this.container.style.width = 100*this.pagesCount+"%";			
-			for(var j=0; j<this.pagesCount; j++){
-				pages[j].style.width = (100/this.pagesCount)+"%";
+			if(this.isVertical){
+				this.container.style.height = 100*this.pagesCount+"%";			
+				for(var j=0; j<this.pagesCount; j++){
+					pages[j].style.height = (100/this.pagesCount)+"%";
+					pages[j].style.clear = "both";
+				}
 			}
-			console.log("pageCount change to " + this.pagesCount);
+			else{
+				this.container.style.width = 100*this.pagesCount+"%";			
+				for(var j=0; j<this.pagesCount; j++){
+					pages[j].style.width = (100/this.pagesCount)+"%";
+				}
+			}
 		},
 		//display all the app icons to the screen.
 		display: function(appNode){
@@ -530,7 +570,7 @@ var spriteMovie = (function(){
 
 //for test.
 setTimeout(function(){
-window.system = new Base("iconsContainer",{dragable:true});
+window.system = new Base("iconsContainer",{dragable:true, isVertical:true});
 system.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
 system.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
 system.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
