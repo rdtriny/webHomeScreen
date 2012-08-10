@@ -100,7 +100,6 @@
 					swipe.data = {};
 					swipe.data.direction = direction;
 					e.target.dispatchEvent(swipe);
-					console.log(e.target.nodeName);
 					this.endX = 0;
 				}
 			}
@@ -144,6 +143,7 @@
 				target = target.parentNode;
 			}
 			if(/[A-z0-9]+\./ig.test(target.id)){
+				this.elPos = target.getAttribute("elPos");
 				console.log(target.id);
 				//location.href = target.id;
 			}
@@ -178,6 +178,7 @@
 			this.display(appNode);
 			if(app.widget){
 				this.addWidget(app.widget ,appNode);
+				appNode.setAttribute("isWidget", "true");
 			}
 		},
 		//change the location of apps
@@ -242,21 +243,24 @@
 			}
 			if(from < to){
 				for(var i=from; i<to; i++){
-					if(i%4==0){
-						icon[i].style.left="75%";
-						icon[i].style.top ="-20%";
-					}else{
-						icon[i].style.left="-25%";
+					if(icon[i]){
+						if(i%4==0){
+							icon[i].style.left="75%";
+							icon[i].style.top ="-20%";
+						}else{
+							icon[i].style.left="-25%";
+						}
 					}
 				}
 			}else{
-				console.log( from + "		           "+to);
 				for(var i=to-1; i<from-1; i++){
-					if(i%4==3){
-						icon[i].style.left="-75%";
-						icon[i].style.top ="20%";
-					}else{
-						icon[i].style.left="25%";
+					if(icon[i]){
+						if(i%4==3){
+							icon[i].style.left="-75%";
+							icon[i].style.top ="20%";
+						}else{
+							icon[i].style.left="25%";
+						}
 					}
 				}
 			}
@@ -333,7 +337,8 @@
 			}
 			return false;
 		},
-		yield: function(elPos, direction, blockNum){
+		yield: function(direction, blockNum){
+			var elPos = this.elPos;
 			elPos -= 1;
 			var icons = document.getElementsByClassName("icon");
 			if(direction == "down"){
@@ -376,7 +381,8 @@
 			}
 			return result;
 		},
-		withdraw: function(elPos, direction, blockNum){
+		withdraw: function(direction, blockNum){
+			var elPos = this.elPos;
 			elPos -= 1;
 			var icons = document.getElementsByClassName("icon");
 			if(direction == "up"){
