@@ -42,7 +42,7 @@
 		dbclickInterval: null,
 		lastClickTime: 0,
 		appsPerRow: 4,
-		appsPerColumn: 5,
+		appsPerColumn: 1,
 		appsCount: 0,
 		pagesCount: 0,
 		currentPageIndex: 0,
@@ -51,6 +51,7 @@
 		moveStartY: 0,
 		endX: 0,
 		endY: 0,
+		stopTouchEnd: false,
 		isVertical: false,
 		touchstart: function(e){
 			this.startX = e.touches[0].pageX;
@@ -85,7 +86,11 @@
 					this.css3move(this.container, dis, 200);
 			}
 		},
-		touchend: function(e){
+		touchend: function(e){			
+			if(this.stopTouchEnd){
+				this.stopTouchEnd = false;
+				return ;
+			}
 			if((new Date)-this.longtapTime < 1000){
 				clearTimeout(this.longTapIndex);
 				if(this.endX){
@@ -118,7 +123,7 @@
 				e.target.dispatchEvent(event);
 			}
 			this.lastClickTime = now;
-			
+					
 			if(this.isVertical){
 				var pageHeight = document.getElementById("appScreen").clientHeight;
 				var percent = this.movedDistance / pageHeight;
@@ -218,6 +223,8 @@
 			var to;
 			this.container.addEventListener("longtap", function(e){
 				var target = e.target;
+				var timeout;
+				that.pageIndexMem = that.currentPageIndex;
 				while(!target.id && target.id!="iconsContainer"){
 					target = target.parentNode;
 				}
@@ -229,7 +236,38 @@
 						var icon = document.getElementsByClassName("icon")[0];
 						var iconHeight = icon.clientHeight;
 						var iconWidth = icon.clientWidth;
-						
+						if(!timeout){
+							if(that.isVertical){
+								if(pagey>iconHeight*4.7){
+									timeout = setTimeout(function(){
+										if(that.currentPageIndex+1 < that.pagesCount)
+											that.slideToPage(that.currentPageIndex+1, 150);
+									}, 1000);
+								}else if(pagey<iconHeight/3){
+									timeout = setTimeout(function(){
+										if(that.currentPageIndex-1 >= 0)
+											that.slideToPage(that.currentPageIndex-1, 150);
+									}, 1000);
+								}
+								else{
+									clearTimeout(timeout);
+								}
+							}else{
+								if(pagex>iconWidth*3.7){
+									timeout = setTimeout(function(){
+										if(that.currentPageIndex+1 < that.pagesCount)
+											that.slideToPage(that.currentPageIndex+1, 150);
+									}, 1000);
+								}else if(pagex<iconWidth/3){
+									timeout = setTimeout(function(){
+										if(that.currentPageIndex-1 >= 0)
+											that.slideToPage(that.currentPageIndex-1, 150);
+									}, 1000);
+								}else{
+									clearTimeout(timeout);
+								}
+							}
+						}
 						var row = Math.round(pagey/iconHeight); //20% height
 						var column = Math.round(pagex/iconWidth); //25% width
 						target.style.left= (pagex-that.startX) + "px";
@@ -239,15 +277,23 @@
 						that.switchNode(target, to);
 					};
 					that.container.ontouchend = function(e){
-						var icon = document.getElementsByClassName("icon");
+						clearTimeout(timeout);
+						timeout = undefined;
+						var pageLen = document.getElementsByClassName("page")[that.currentPageIndex].getElementsByClassName("icon").length;
+						var icon =  document.getElementsByClassName("icon");
 						target.style.webkitTransform = "";						
 						that.container.ontouchmove = null;
 						that.container.ontouchend = null;
 						var tmpNode = target.cloneNode(true);
 						tmpNode.onclick = target.onclick;
-						if(target.id != icon[icon.length-1].id || to!=icon.length){
-							document.getElementsByClassName("page")[that.currentPageIndex].removeChild(target);
-							document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);
+						if(target.id != icon[icon.length-1].id && to<pageLen){
+							console.log("that.pageIndexMem    "+that.pageIndexMem+"       that.currentPageIndex "+that.currentPageIndex+"           pageLen   "+pageLen);
+							document.getElementsByClassName("page")[that.pageIndexMem].removeChild(target);
+							document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);							
+						}
+						else{								
+							document.getElementsByClassName("page")[that.pageIndexMem].removeChild(target);
+							document.getElementsByClassName("page")[that.currentPageIndex].appendChild(tmpNode);
 						}
 						for(var i=0; i<icon.length; i++){
 							icon[i].style.left="";
@@ -259,7 +305,7 @@
 			}, false);
 		},
 		switchNode: function(node, to){
-			var icon = document.getElementsByClassName("icon");
+			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
 			var from;
 			var len = icon.length;
 			if(to>len)
@@ -299,8 +345,19 @@
 		//switch the pages left or right.
 		slideToPage: function(pageIndex, time){
 			var pageWidth = document.getElementById("appScreen").clientWidth;
-			var x = pageIndex*pageWidth*-1;
-			this.css3move(this.container, {x:x, y:0}, time);
+			var pageHeight = document.getElementById("appScreen").clientHeight;
+			if(this.isVertical){
+				var y = pageIndex*pageHeight;
+				this.css3move(this.container, {x:0, y:y}, time);
+				this.moveStartY = y;
+			}
+			else{
+				var x = pageIndex*pageWidth*-1;
+				this.css3move(this.container, {x:x, y:0}, time);
+				this.moveStartX = x;
+			}
+			this.stopTouchEnd = true;
+			this.currentPageIndex = pageIndex;
 		},
 		css3move: function(el, distance, time){
 			time = time || 0;
@@ -309,8 +366,6 @@
 			el.style.webkitBackfaceVisiblity = 'hidden';
 			el.style.webkitTransformStyle = 'preserve-3d';
 			el.style.webkitTransitionTimingFunction = 'cubic-bezier(0.33,0.66,0.66,1)';
-			
-			console.log(distance.y);
 		},
 		//manage the pages which is hosting app icons. inc for increment
 		managePages: function(inc){
@@ -570,7 +625,7 @@ var spriteMovie = (function(){
 
 //for test.
 setTimeout(function(){
-window.system = new Base("iconsContainer",{dragable:true, isVertical:true});
+window.system = new Base("iconsContainer",{dragable:true, isVertical:false});
 system.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
 system.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
 system.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
@@ -587,5 +642,5 @@ window.addEventListener("gestureend", function(){
 }, false);
 
 window.addEventListener("swipe", function(e){
-	console.log(e.data.direction);
+	//console.log(e.data.direction);
 }, false);
