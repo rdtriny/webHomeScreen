@@ -49,14 +49,14 @@
 	}
 	
 	window.onclick = function(e){
-		if(/[A-z0-9]+\./ig.test(e.target.id) || /[A-z0-9]+\./ig.test(e.target.parentNode.id)){
+		if((/[A-z0-9]+\./ig.test(e.target.parentNode.id) && e.target.parentNode.getAttribute("isWidget")) ||  (/[A-z0-9]+\./ig.test(e.target.id) && e.target.getAttribute("isWidget"))){
+			console.log("hello world");
 			var pagex = e.pageX, pagey = e.pageY;
 			var icon = document.getElementsByClassName("icon")[0];
 			var iconHeight = icon.clientHeight;
 			var iconWidth = icon.clientWidth;
 			var row = Math.floor(pagey/iconHeight);
 			var column = Math.floor(pagex/iconWidth);
-			console.log("row             " + row + "              column  "+column);
 			flashWindow.style.top = row*20 + "%";
 			flashWindow.style.left = column*25 + "%";
 			system.yield("right", 3);
