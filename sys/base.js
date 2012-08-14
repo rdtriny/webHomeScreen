@@ -31,6 +31,7 @@
 			this.drag();
 		}
 		this.isWidgetShow = false;
+		this.addFixedArea();
 	};
 	base.prototype = {
 		appStyle: null,
@@ -79,11 +80,20 @@
 				
 				if(this.isVertical){
 					var y = this.startY-pagey + this.moveStartY;
+					var maxHeight = document.getElementById("appScreen").clientHeight*(this.pagesCount-1);
+					if(y> maxHeight){
+						y = maxHeight;
+					}
 					var dis = {x:0, y:y};
 					this.movedDistance = pagey-this.startY;
 				}
 				else{
-					var x = pagex-this.startX + this.moveStartX;
+					var x = pagex-this.startX + this.moveStartX;					
+					var maxWidth = document.getElementById("appScreen").clientWidth*(this.pagesCount-1)*-1;
+					if(x>0)
+						x=0;
+					else if(x < maxWidth)
+						x=maxWidth;
 					var dis = {x:x, y:0};
 					this.movedDistance = pagex-this.startX;					
 				}
@@ -133,7 +143,7 @@
 			if(this.isVertical){
 				var pageHeight = document.getElementById("appScreen").clientHeight;
 				var percent = this.movedDistance / pageHeight;
-				if((Math.abs(percent)>0.06  && lastMoveSpeed>1)||(Math.abs(percent)>0.5 && lastMoveSpeed<1)){
+				if(lastMoveSpeed>0.5){
 					if(percent>0 && this.currentPageIndex>0){
 						var y = (this.currentPageIndex-1)*pageHeight;
 						this.currentPageIndex -= 1;
@@ -146,8 +156,10 @@
 						y = this.currentPageIndex*pageHeight;
 					}
 				}
-				else {
-					y = this.currentPageIndex*pageHeight;
+				else{
+					y = -Math.round((percent/0.2))*pageHeight/5 + this.moveStartY;
+					if(y>pageHeight*(this.pagesCount-1))
+						y=pageHeight*(this.pagesCount-1);
 				}			
 				this.moveStartY = y;
 				this.css3move(this.container, {x:0, y:y}, 200);	
@@ -520,7 +532,16 @@
 				}
 			}
 		},
-		
+		addFixedArea: function(){
+			var div = document.createElement("div");
+			div.style.width = "100%";
+			div.style.height = "16%";
+			div.style.position = "fixed";
+			div.style.bottom = "0";
+			div.style.backgroundColor = "#888888";
+			div.style.zIndex = "100";
+			document.getElementById("appScreen").appendChild(div);		
+		}
 	};
 	return base;
 })(window);
