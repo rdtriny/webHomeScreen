@@ -38,26 +38,27 @@
 		startY: 0,
 		longTapIndex: null,
 		longtapStart: false,
-		longtapTime: 0,
 		dbclickInterval: null,
 		lastClickTime: 0,
 		appsPerRow: 4,
-		appsPerColumn: 1,
+		appsPerColumn: 4,
 		appsCount: 0,
 		pagesCount: 0,
 		currentPageIndex: 0,
 		movedDistance: 0,
 		moveStartX: 0,
 		moveStartY: 0,
+		nextToEndX: 0,
+		nextToEndY: 0,
 		endX: 0,
 		endY: 0,
+		lastMoveTime: undefined,
 		stopTouchEnd: false,
 		isVertical: false,
 		touchstart: function(e){
 			this.startX = e.touches[0].pageX;
 			this.startY = e.touches[0].pageY;
 			
-			this.longtapTime = new Date;
 			var that = this;
 			this.longTapIndex = setTimeout(function(){
 				e.stopPropagation();
@@ -68,10 +69,14 @@
 			}, 1000);
 		},
 		touchmove: function(e){
-			if((new Date)-this.longtapTime < 1000){
+			this.lastMoveTime = new Date;
+			if(!this.longtapStart){
 				clearTimeout(this.longTapIndex);
+				this.nextToEndX = this.endX;
+				this.nextToEndY = this.endY;
 				var pagex = this.endX = e.touches[0].pageX;
 				var pagey = this.endY = e.touches[0].pageY;
+				
 				if(this.isVertical){
 					var y = this.startY-pagey + this.moveStartY;
 					var dis = {x:0, y:y};
@@ -82,16 +87,15 @@
 					var dis = {x:x, y:0};
 					this.movedDistance = pagex-this.startX;					
 				}
-				if(!this.isWidgetShow)
-					this.css3move(this.container, dis, 200);
+				this.css3move(this.container, dis, 200);
 			}
 		},
-		touchend: function(e){			
+		touchend: function(e){
 			if(this.stopTouchEnd){
 				this.stopTouchEnd = false;
 				return ;
 			}
-			if((new Date)-this.longtapTime < 1000){
+			if(!this.longtapStart){
 				clearTimeout(this.longTapIndex);
 				if(this.endX){
 					if(Math.abs(this.endX-this.startX) > Math.abs(this.endY-this.startY)){
@@ -107,15 +111,17 @@
 							direction = "up";
 						}
 					}
+					var lastMoveSpeed = Math.sqrt((this.endX-this.nextToEndX)*(this.endX-this.nextToEndX)+(this.endY-this.nextToEndY)*(this.endY-this.nextToEndY))/(new Date - this.lastMoveTime);
 					var swipe = document.createEvent("Events");
 					swipe.initEvent("swipe", true, true);
 					swipe.data = {};
 					swipe.data.direction = direction;
+					swipe.data.endSpeed = lastMoveSpeed;
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
 			}
-			
+						
 			var now = new Date;
 			if(now - this.lastClickTime<200){
 				var event = document.createEvent("Events");
@@ -127,7 +133,7 @@
 			if(this.isVertical){
 				var pageHeight = document.getElementById("appScreen").clientHeight;
 				var percent = this.movedDistance / pageHeight;
-				if(Math.abs(percent) > 0.06  && !this.isWidgetShow){
+				if((Math.abs(percent)>0.06  && lastMoveSpeed>1)||(Math.abs(percent)>0.5 && lastMoveSpeed<1)){
 					if(percent>0 && this.currentPageIndex>0){
 						var y = (this.currentPageIndex-1)*pageHeight;
 						this.currentPageIndex -= 1;
@@ -149,7 +155,7 @@
 			else{
 				var pageWidth = document.getElementById("appScreen").clientWidth;
 				percent = this.movedDistance / pageWidth;				
-				if(Math.abs(percent) > 0.06  && !this.isWidgetShow){
+				if((Math.abs(percent)>0.06  && lastMoveSpeed>1)||(Math.abs(percent)>0.5 && lastMoveSpeed<1)){
 					if(percent>0 && this.currentPageIndex>0){
 						var x = (this.currentPageIndex-1)*pageWidth*-1;
 						this.currentPageIndex -= 1;
@@ -171,6 +177,7 @@
 			this.longtapStart = false;
 		},
 		touchcancel: function(e){
+			//console.log("touch cancel");
 			this.touchend(e);
 		},
 		click: function(e){
@@ -238,12 +245,12 @@
 						var iconWidth = icon.clientWidth;
 						if(!timeout){
 							if(that.isVertical){
-								if(pagey>iconHeight*4.7){
+								if(pagey>iconHeight*4.9){
 									timeout = setTimeout(function(){
 										if(that.currentPageIndex+1 < that.pagesCount)
 											that.slideToPage(that.currentPageIndex+1, 150);
 									}, 1000);
-								}else if(pagey<iconHeight/3){
+								}else if(pagey<iconHeight/5){
 									timeout = setTimeout(function(){
 										if(that.currentPageIndex-1 >= 0)
 											that.slideToPage(that.currentPageIndex-1, 150);
@@ -625,7 +632,7 @@ var spriteMovie = (function(){
 
 //for test.
 setTimeout(function(){
-window.system = new Base("iconsContainer",{dragable:true, isVertical:false});
+window.system = new Base("iconsContainer",{dragable:true, isVertical:true});
 system.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
 system.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
 system.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
@@ -635,6 +642,29 @@ system.register({title:"rss",packageName:"com.orange.rss",imgSrc:"./images/rss.p
 system.register({title:"alarm",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
 system.register({title:"tv",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
 system.register({title:"message",packageName:"com.orange.message",imgSrc:"./images/message.png",widget:""})
+system.register({title:"browser",packageName:"com.orange.browser",imgSrc:"./images/browser.png",widget:""})
+system.register({title:"caculator",packageName:"com.orange.caculator",imgSrc:"./images/calculator.png",widget:""})
+system.register({title:"calendar",packageName:"com.orange.calendar",imgSrc:"./images/calendar.png",widget:""})
+system.register({title:"camera",packageName:"com.orange.camera",imgSrc:"./images/camera.png",widget:""})
+system.register({title:"chat",packageName:"com.orange.chat",imgSrc:"./images/chat.png",widget:""})
+system.register({title:"clock",packageName:"com.orange.clock",imgSrc:"./images/clock.png",widget:""})
+system.register({title:"game",packageName:"com.orange.game",imgSrc:"./images/game.png",widget:""})
+system.register({title:"phone",packageName:"com.orange.phone",imgSrc:"./images/phone.png",widget:""})
+system.register({title:"picture",packageName:"com.orange.picture",imgSrc:"./images/picture.png",widget:""})
+system.register({title:"recorder",packageName:"com.orange.recorder",imgSrc:"./images/recorder.png",widget:""})
+system.register({title:"store",packageName:"com.orange.store",imgSrc:"./images/store.png",widget:""})
+
+system.register({title:"alarm",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
+system.register({title:"tv",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
+system.register({title:"message",packageName:"com.orange.message",imgSrc:"./images/message.png",widget:""})
+system.register({title:"browser",packageName:"com.orange.browser",imgSrc:"./images/browser.png",widget:""})
+system.register({title:"caculator",packageName:"com.orange.caculator",imgSrc:"./images/calculator.png",widget:""})
+system.register({title:"calendar",packageName:"com.orange.calendar",imgSrc:"./images/calendar.png",widget:""})
+system.register({title:"camera",packageName:"com.orange.camera",imgSrc:"./images/camera.png",widget:""})
+system.register({title:"chat",packageName:"com.orange.chat",imgSrc:"./images/chat.png",widget:""})
+system.register({title:"clock",packageName:"com.orange.clock",imgSrc:"./images/clock.png",widget:""})
+system.register({title:"game",packageName:"com.orange.game",imgSrc:"./images/game.png",widget:""})
+system.register({title:"phone",packageName:"com.orange.phone",imgSrc:"./images/phone.png",widget:""})
 }, 2000);
 
 window.addEventListener("gestureend", function(){
