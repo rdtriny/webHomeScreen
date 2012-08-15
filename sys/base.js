@@ -59,6 +59,7 @@
 		touchstart: function(e){
 			this.startX = e.touches[0].pageX;
 			this.startY = e.touches[0].pageY;
+			this.longtapStart = false;
 			
 			var that = this;
 			this.longTapIndex = setTimeout(function(){
@@ -70,6 +71,7 @@
 			}, 1000);
 		},
 		touchmove: function(e){
+			e.preventDefault();
 			this.lastMoveTime = new Date;
 			if(!this.longtapStart){
 				clearTimeout(this.longTapIndex);
@@ -83,9 +85,12 @@
 					var maxHeight = document.getElementById("appScreen").clientHeight*(this.pagesCount-1);
 					if(y> maxHeight){
 						y = maxHeight;
+					}else if(y<0){
+						y=0;
 					}
 					var dis = {x:0, y:y};
-					this.movedDistance = pagey-this.startY;
+					this.movedDistance = pagey-this.startY;				
+					document.body.style.backgroundPosition = "0 " + (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
 				}
 				else{
 					var x = pagex-this.startX + this.moveStartX;					
@@ -96,6 +101,8 @@
 						x=maxWidth;
 					var dis = {x:x, y:0};
 					this.movedDistance = pagex-this.startX;					
+					document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";
+					console.log(document.body.style.backgroundPosition);
 				}
 				this.css3move(this.container, dis, 200);
 			}
@@ -130,8 +137,7 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-			}
-						
+			}						
 			var now = new Date;
 			if(now - this.lastClickTime<200){
 				var event = document.createEvent("Events");
@@ -143,7 +149,7 @@
 			if(this.isVertical){
 				var pageHeight = document.getElementById("appScreen").clientHeight;
 				var percent = this.movedDistance / pageHeight;
-				if(lastMoveSpeed>0.5){
+				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.5)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.5)){
 					if(percent>0 && this.currentPageIndex>0){
 						var y = (this.currentPageIndex-1)*pageHeight;
 						this.currentPageIndex -= 1;
@@ -157,17 +163,16 @@
 					}
 				}
 				else{
-					y = -Math.round((percent/0.2))*pageHeight/5 + this.moveStartY;
-					if(y>pageHeight*(this.pagesCount-1))
-						y=pageHeight*(this.pagesCount-1);
+					y = this.currentPageIndex*pageHeight;
 				}			
 				this.moveStartY = y;
-				this.css3move(this.container, {x:0, y:y}, 200);	
+				this.css3move(this.container, {x:0, y:y}, 200);
+				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*this.currentPageIndex+"%";
 			}
 			else{
 				var pageWidth = document.getElementById("appScreen").clientWidth;
 				percent = this.movedDistance / pageWidth;				
-				if((Math.abs(percent)>0.06  && lastMoveSpeed>1)||(Math.abs(percent)>0.5 && lastMoveSpeed<1)){
+				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.5)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.5)){
 					if(percent>0 && this.currentPageIndex>0){
 						var x = (this.currentPageIndex-1)*pageWidth*-1;
 						this.currentPageIndex -= 1;
@@ -184,9 +189,9 @@
 					x = this.currentPageIndex*pageWidth*-1;
 				}			
 				this.moveStartX = x;				
-				this.css3move(this.container, {x:x, y:0}, 200);	
-			}		
-			this.longtapStart = false;
+				this.css3move(this.container, {x:x, y:0}, 200);				
+				document.body.style.backgroundPosition = (100/this.pagesCount)*this.currentPageIndex+"% 0%";
+			}
 		},
 		touchcancel: function(e){
 			//console.log("touch cancel");
@@ -257,7 +262,7 @@
 						var iconWidth = icon.clientWidth;
 						if(!timeout){
 							if(that.isVertical){
-								if(pagey>iconHeight*4.9){
+								if(pagey>iconHeight*3.9){
 									timeout = setTimeout(function(){
 										if(that.currentPageIndex+1 < that.pagesCount)
 											that.slideToPage(that.currentPageIndex+1, 150);
@@ -287,7 +292,7 @@
 								}
 							}
 						}
-						var row = Math.round(pagey/iconHeight); //20% height
+						var row = Math.round(pagey/iconHeight); //25% height
 						var column = Math.round(pagex/iconWidth); //25% width
 						target.style.left= (pagex-that.startX) + "px";
 						target.style.top = (pagey-that.startY) + "px";
@@ -300,13 +305,10 @@
 						timeout = undefined;
 						var pageLen = document.getElementsByClassName("page")[that.currentPageIndex].getElementsByClassName("icon").length;
 						var icon =  document.getElementsByClassName("icon");
-						target.style.webkitTransform = "";						
-						that.container.ontouchmove = null;
-						that.container.ontouchend = null;
+						target.style.webkitTransform = "";
 						var tmpNode = target.cloneNode(true);
 						tmpNode.onclick = target.onclick;
 						if(target.id != icon[icon.length-1].id && to<pageLen){
-							console.log("that.pageIndexMem    "+that.pageIndexMem+"       that.currentPageIndex "+that.currentPageIndex+"           pageLen   "+pageLen);
 							document.getElementsByClassName("page")[that.pageIndexMem].removeChild(target);
 							document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);							
 						}
@@ -318,7 +320,9 @@
 							icon[i].style.left="";
 							icon[i].style.top ="";
 							icon[i].setAttribute("elPos", i+1);
-						}
+						}											
+						that.container.ontouchmove = null;
+						that.container.ontouchend = null;
 					}
 				}
 			}, false);
@@ -342,7 +346,7 @@
 					if(icon[i]){
 						if(i%4==0){
 							icon[i].style.left="75%";
-							icon[i].style.top ="-20%";
+							icon[i].style.top ="-25%";
 						}else{
 							icon[i].style.left="-25%";
 						}
@@ -353,7 +357,7 @@
 					if(icon[i]){
 						if(i%4==3){
 							icon[i].style.left="-75%";
-							icon[i].style.top ="20%";
+							icon[i].style.top ="25%";
 						}else{
 							icon[i].style.left="25%";
 						}
@@ -455,15 +459,16 @@
 			var elPos = this.elPos;
 			elPos -= 1;
 			var icons = document.getElementsByClassName("icon");
+			var lineHeight = 100/this.appsPerColumn;
 			if(direction == "down"){
 				for(var i=1; i<blockNum; i++){
 						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+20)+"%";
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
 				}
 				while(icons[elPos]){
 					for(var i=0; i<blockNum; i++){
 						if(icons[elPos+4+i]){
-							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)+20)+"%";
+							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)+lineHeight)+"%";
 						}
 					}
 					elPos += 4;
@@ -473,7 +478,7 @@
 				while(icons[elPos]){
 					for(var i=1; i<blockNum; i++){
 						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+20)+"%";
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
 					}
 					elPos += 4;
 				}
@@ -482,7 +487,7 @@
 				while(icons[elPos]){
 					for(var i=blockNum-1; i>0; i--){
 						if(icons[elPos-i])
-							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)+20)+"%";
+							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)+lineHeight)+"%";
 					}
 					elPos += 4;
 				}
@@ -498,16 +503,17 @@
 		withdraw: function(direction, blockNum){
 			var elPos = this.elPos;
 			elPos -= 1;
-			var icons = document.getElementsByClassName("icon");
+			var icons = document.getElementsByClassName("icon");			
+			var lineHeight = 100/this.appsPerColumn;
 			if(direction == "up"){
 				for(var i=1; i<blockNum; i++){
 						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-20)+"%";
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
 				}
 				while(icons[elPos]){
 					for(var i=0; i<blockNum; i++){
 						if(icons[elPos+4+i]){
-							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)-20)+"%";
+							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)-lineHeight)+"%";
 						}
 					}
 					elPos += 4;
@@ -517,7 +523,7 @@
 				while(icons[elPos]){
 					for(var i=1; i<blockNum; i++){
 						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-20)+"%";
+							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
 					}
 					elPos += 4;
 				}
@@ -526,7 +532,7 @@
 				while(icons[elPos]){
 					for(var i=blockNum-1; i>0; i--){
 						if(icons[elPos-i])
-							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)-20)+"%";
+							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)-lineHeight)+"%";
 					}
 					elPos += 4;
 				}
@@ -540,8 +546,9 @@
 			div.style.bottom = "0";
 			div.style.backgroundColor = "#888888";
 			div.style.zIndex = "100";
-			document.getElementById("appScreen").appendChild(div);		
-		}
+			document.body.appendChild(div);		
+		},
+		
 	};
 	return base;
 })(window);
