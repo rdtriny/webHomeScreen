@@ -10,6 +10,7 @@ Applications management system:
 	3. update applications (releated info of apps, position management of the apps) 
 	4. application's paging system.
 	5. launch apps (under developement)
+	6. manage folders for user defined.
 	
 Widgets management system:
 
@@ -34,6 +35,7 @@ Events system:
 		5. cache releated
 		6. drag
 		7. swipe
+		8. pinch (only available on android 4.0+) 
 		
 Notifacations system:
 
