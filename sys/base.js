@@ -27,9 +27,6 @@
 		this.container.addEventListener("click", function(e){
 			that.click(e);
 		}, false);
-		if(this.dragable){
-			this.drag();
-		}
 		this.isWidgetShow = false;
 		this.addFixedArea();
 	};
@@ -37,6 +34,8 @@
 		appStyle: null,
 		startX: 0,
 		startY: 0,
+		pinchStartLen: 0,
+		pinchEndLen: 0,
 		longTapIndex: null,
 		longtapStart: false,
 		dbclickInterval: null,
@@ -56,55 +55,77 @@
 		lastMoveTime: undefined,
 		stopTouchEnd: false,
 		isVertical: false,
-		touchstart: function(e){
-			this.startX = e.touches[0].pageX;
-			this.startY = e.touches[0].pageY;
+		isDragging: false,
+		touchstart: function(e){			
+			this.pinchEndLen = 0;
 			this.longtapStart = false;
-			
-			var that = this;
-			this.longTapIndex = setTimeout(function(){
-				e.stopPropagation();
-				var event = document.createEvent("Events");
-				event.initEvent("longtap", true, true);
-				e.target.dispatchEvent(event);
-				that.longtapStart = true;
-			}, 1000);
+			if(e.touches.length === 1){
+				this.startX = e.touches[0].pageX;
+				this.startY = e.touches[0].pageY;
+				
+				var that = this;
+				this.longTapIndex = setTimeout(function(){
+					var event = document.createEvent("Events");
+					event.initEvent("longtap", true, true);
+					e.target.dispatchEvent(event);
+					that.longtapStart = true;
+					that.dragStart(e);
+				}, 1000);
+			}
+			else if(e.touches.length === 2){
+				//this line is very very important, 'cause when two point gestures fire, the length will be 1,2,1 in order. prevent Drag event.
+				clearTimeout(this.longTapIndex);
+				this.pinchStartLen = Math.sqrt((e.touches[1].pageX-e.touches[0].pageX)*(e.touches[1].pageX-e.touches[0].pageX)+(e.touches[1].pageY-e.touches[0].pageY)*(e.touches[1].pageY-e.touches[0].pageY));
+			}
 		},
 		touchmove: function(e){
 			e.preventDefault();
-			this.lastMoveTime = new Date;
+			this.lastMoveTime = new Date;					
+			clearTimeout(this.longTapIndex);
 			if(!this.longtapStart){
-				clearTimeout(this.longTapIndex);
-				this.nextToEndX = this.endX;
-				this.nextToEndY = this.endY;
-				var pagex = this.endX = e.touches[0].pageX;
-				var pagey = this.endY = e.touches[0].pageY;
-				
-				if(this.isVertical){
-					var y = this.startY-pagey + this.moveStartY;
-					var maxHeight = document.getElementById("appScreen").clientHeight*(this.pagesCount-1);
-					if(y> maxHeight){
-						y = maxHeight;
-					}else if(y<0){
-						y=0;
+				if(e.touches.length == 1){
+					this.nextToEndX = this.endX;
+					this.nextToEndY = this.endY;
+					var pagex = this.endX = e.touches[0].pageX;
+					var pagey = this.endY = e.touches[0].pageY;
+					
+					if(this.isVertical){
+						var y = this.startY-pagey + this.moveStartY;
+						var maxHeight = document.getElementById("appScreen").clientHeight*(this.pagesCount-1);
+						if(y> maxHeight){
+							y = maxHeight;
+						}else if(y<0){
+							y=0;
+						}
+						var dis = {x:0, y:y};
+						this.movedDistance = pagey-this.startY;				
+						document.body.style.backgroundPosition = "0 " + (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
 					}
-					var dis = {x:0, y:y};
-					this.movedDistance = pagey-this.startY;				
-					document.body.style.backgroundPosition = "0 " + (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
+					else{
+						var x = pagex-this.startX + this.moveStartX;					
+						var maxWidth = document.getElementById("appScreen").clientWidth*(this.pagesCount-1)*-1;
+						if(x>0)
+							x=0;
+						else if(x < maxWidth)
+							x=maxWidth;
+						var dis = {x:x, y:0};
+						this.movedDistance = pagex-this.startX;					
+						document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";
+						console.log(document.body.style.backgroundPosition);
+					}
+					this.css3move(this.container, dis);
 				}
-				else{
-					var x = pagex-this.startX + this.moveStartX;					
-					var maxWidth = document.getElementById("appScreen").clientWidth*(this.pagesCount-1)*-1;
-					if(x>0)
-						x=0;
-					else if(x < maxWidth)
-						x=maxWidth;
-					var dis = {x:x, y:0};
-					this.movedDistance = pagex-this.startX;					
-					document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";
-					console.log(document.body.style.backgroundPosition);
+				else if(e.touches.length == 2){
+					if(!this.pinchEndLen){
+						this.pinchEndLen = Math.sqrt((e.touches[1].pageX-e.touches[0].pageX)*(e.touches[1].pageX-e.touches[0].pageX)+(e.touches[1].pageY-e.touches[0].pageY)*(e.touches[1].pageY-e.touches[0].pageY));
+						var pinchEvent = document.createEvent("Events");
+						pinchEvent.initEvent("pinch", true, true);
+						pinchEvent.scale = this.pinchEndLen/this.pinchStartLen;
+						e.target.dispatchEvent(pinchEvent);
+					}
 				}
-				this.css3move(this.container, dis, 200);
+			}else{
+				this.dragMove(e);
 			}
 		},
 		touchend: function(e){
@@ -137,7 +158,10 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-			}						
+			}else{
+				this.dragEnd(e);
+			}		
+			
 			var now = new Date;
 			if(now - this.lastClickTime<200){
 				var event = document.createEvent("Events");
@@ -145,11 +169,11 @@
 				e.target.dispatchEvent(event);
 			}
 			this.lastClickTime = now;
-					
+			
 			if(this.isVertical){
 				var pageHeight = document.getElementById("appScreen").clientHeight;
 				var percent = this.movedDistance / pageHeight;
-				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.5)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.5)){
+				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.3)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.3)){
 					if(percent>0 && this.currentPageIndex>0){
 						var y = (this.currentPageIndex-1)*pageHeight;
 						this.currentPageIndex -= 1;
@@ -172,7 +196,7 @@
 			else{
 				var pageWidth = document.getElementById("appScreen").clientWidth;
 				percent = this.movedDistance / pageWidth;				
-				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.5)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.5)){
+				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.3)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.3)){
 					if(percent>0 && this.currentPageIndex>0){
 						var x = (this.currentPageIndex-1)*pageWidth*-1;
 						this.currentPageIndex -= 1;
@@ -191,10 +215,9 @@
 				this.moveStartX = x;				
 				this.css3move(this.container, {x:x, y:0}, 200);				
 				document.body.style.backgroundPosition = (100/this.pagesCount)*this.currentPageIndex+"% 0%";
-			}
+			}			
 		},
 		touchcancel: function(e){
-			//console.log("touch cancel");
 			this.touchend(e);
 		},
 		click: function(e){
@@ -241,91 +264,103 @@
 				appNode.setAttribute("isWidget", "true");
 			}
 		},
-		//change the location of apps
-		drag: function(){
-			var that = this;
-			var to;
-			this.container.addEventListener("longtap", function(e){
-				var target = e.target;
-				var timeout;
-				that.pageIndexMem = that.currentPageIndex;
-				while(!target.id && target.id!="iconsContainer"){
-					target = target.parentNode;
-				}
-				if(/[A-z0-9]+\./ig.test(target.id)){
-					target.style.webkitTransform = "scale(1.3)";
-					that.container.ontouchmove = function(e){
-						var pagex = e.touches[0].pageX;
-						var pagey = e.touches[0].pageY;
-						var icon = document.getElementsByClassName("icon")[0];
-						var iconHeight = icon.clientHeight;
-						var iconWidth = icon.clientWidth;
-						if(!timeout){
-							if(that.isVertical){
-								if(pagey>iconHeight*3.9){
-									timeout = setTimeout(function(){
-										if(that.currentPageIndex+1 < that.pagesCount)
-											that.slideToPage(that.currentPageIndex+1, 150);
-									}, 1000);
-								}else if(pagey<iconHeight/5){
-									timeout = setTimeout(function(){
-										if(that.currentPageIndex-1 >= 0)
-											that.slideToPage(that.currentPageIndex-1, 150);
-									}, 1000);
-								}
-								else{
-									clearTimeout(timeout);
-								}
-							}else{
-								if(pagex>iconWidth*3.7){
-									timeout = setTimeout(function(){
-										if(that.currentPageIndex+1 < that.pagesCount)
-											that.slideToPage(that.currentPageIndex+1, 150);
-									}, 1000);
-								}else if(pagex<iconWidth/3){
-									timeout = setTimeout(function(){
-										if(that.currentPageIndex-1 >= 0)
-											that.slideToPage(that.currentPageIndex-1, 150);
-									}, 1000);
-								}else{
-									clearTimeout(timeout);
-								}
-							}
-						}
-						var row = Math.round(pagey/iconHeight); //25% height
-						var column = Math.round(pagex/iconWidth); //25% width
-						target.style.left= (pagex-that.startX) + "px";
-						target.style.top = (pagey-that.startY) + "px";
-						row = row||1;
-						to = (row-1)*4+column;
-						that.switchNode(target, to);
-					};
-					that.container.ontouchend = function(e){
-						clearTimeout(timeout);
-						timeout = undefined;
-						var pageLen = document.getElementsByClassName("page")[that.currentPageIndex].getElementsByClassName("icon").length;
-						var icon =  document.getElementsByClassName("icon");
-						target.style.webkitTransform = "";
-						var tmpNode = target.cloneNode(true);
-						tmpNode.onclick = target.onclick;
-						if(target.id != icon[icon.length-1].id && to<pageLen){
-							document.getElementsByClassName("page")[that.pageIndexMem].removeChild(target);
-							document.getElementsByClassName("page")[that.currentPageIndex].insertBefore(tmpNode, icon[to-1]);							
-						}
-						else{								
-							document.getElementsByClassName("page")[that.pageIndexMem].removeChild(target);
-							document.getElementsByClassName("page")[that.currentPageIndex].appendChild(tmpNode);
-						}
-						for(var i=0; i<icon.length; i++){
-							icon[i].style.left="";
-							icon[i].style.top ="";
-							icon[i].setAttribute("elPos", i+1);
-						}											
-						that.container.ontouchmove = null;
-						that.container.ontouchend = null;
+		dragStart: function(e){
+			var target = e.target;
+			this.pageIndexMem = this.currentPageIndex;
+			while(!target.id && target.id!="iconsContainer"){
+				target = target.parentNode;
+			}
+			if(/[A-z0-9]+\./ig.test(target.id)){
+				target.style.webkitTransform = "scale(1.2)";
+				this.isDragging = true;
+				this.target = target;
+			}
+		},
+		dragMove: function(e){
+			if(!this.isDragging){
+				return ;
+			}
+			var that = this;									
+			var pagex = e.touches[0].pageX;
+			var pagey = e.touches[0].pageY;
+			var icon = document.getElementsByClassName("icon")[0];
+			var iconHeight = icon.clientHeight;
+			var iconWidth = icon.clientWidth;
+			if(!this.timeout){
+				if(that.isVertical){
+					if(pagey>iconHeight*3.9){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex+1 < that.pagesCount)
+								that.slideToPage(that.currentPageIndex+1, 150);
+						}, 1000);
+					}else if(pagey<iconHeight/5){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex-1 >= 0)
+								that.slideToPage(that.currentPageIndex-1, 150);
+						}, 1000);
+					}
+					else{
+						clearTimeout(this.timeout);
+					}
+				}else{
+					if(pagex>iconWidth*3.7){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex+1 < that.pagesCount)
+								that.slideToPage(that.currentPageIndex+1, 150);
+						}, 1000);
+					}else if(pagex<iconWidth/3){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex-1 >= 0)
+								that.slideToPage(that.currentPageIndex-1, 150);
+						}, 1000);
+					}else{
+						clearTimeout(this.timeout);
 					}
 				}
-			}, false);
+			}
+			var row = Math.round(pagey/iconHeight); //25% height
+			var column = Math.round(pagex/iconWidth); //25% width
+			this.target.style.left= (pagex-that.startX) + "px";
+			this.target.style.top = (pagey-that.startY) + "px";
+			row = row||1;
+			this.to = (row-1)*4+column;
+			that.switchNode(this.target, this.to);
+		},
+		dragEnd: function(e){
+			if(!this.isDragging){
+				return ;
+			}
+			clearTimeout(this.timeout);
+			this.timeout = undefined;
+			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
+			var pageLen = icon.length;
+			this.target.style.webkitTransform = "";
+			var tmpNode = this.target.cloneNode(true);
+			tmpNode.onclick = this.target.onclick;
+			try{
+				if(this.target.id != icon[icon.length-1].id && this.to<pageLen){
+					console.log(this.to-1);
+					document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.target);
+					document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);							
+				}
+				else{
+					if(document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length<16){
+						document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.target);
+						document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);
+					}else{
+						throw "This page is full, no space for other apps.";
+					}
+				}
+			}
+			catch(error){
+				console.log(error);
+			}
+			var allIcon = document.getElementsByClassName("icon");
+			for(var i=0; i<allIcon.length; i++){
+				allIcon[i].style.left="";
+				allIcon[i].style.top ="";
+				allIcon[i].setAttribute("elPos", i+1);
+			}
 		},
 		switchNode: function(node, to){
 			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
@@ -660,7 +695,7 @@ var spriteMovie = (function(){
 
 //for test.
 setTimeout(function(){
-window.system = new Base("iconsContainer",{dragable:true, isVertical:true});
+window.system = new Base("iconsContainer",{isVertical:true});
 system.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
 system.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
 system.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
@@ -701,4 +736,11 @@ window.addEventListener("gestureend", function(){
 
 window.addEventListener("swipe", function(e){
 	//console.log(e.data.direction);
+}, false);
+window.addEventListener("pinch", function(e){
+	if(e.scale > 1){
+		console.log("pinch to larger");
+	}else{
+		console.log("pinch to smaller");
+	}
 }, false);
