@@ -158,9 +158,8 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-			}else{
 				this.dragEnd(e);
-			}		
+			}	
 			
 			var now = new Date;
 			if(now - this.lastClickTime<200){
@@ -190,7 +189,7 @@
 					y = this.currentPageIndex*pageHeight;
 				}			
 				this.moveStartY = y;
-				this.css3move(this.container, {x:0, y:y}, 200);
+				this.css3move(this.container, {x:0, y:y}, 100);
 				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*this.currentPageIndex+"%";
 			}
 			else{
@@ -213,7 +212,7 @@
 					x = this.currentPageIndex*pageWidth*-1;
 				}			
 				this.moveStartX = x;				
-				this.css3move(this.container, {x:x, y:0}, 200);				
+				this.css3move(this.container, {x:x, y:0}, 100);				
 				document.body.style.backgroundPosition = (100/this.pagesCount)*this.currentPageIndex+"% 0%";
 			}			
 		},
@@ -291,12 +290,12 @@
 					if(pagey>iconHeight*3.9){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex+1 < that.pagesCount)
-								that.slideToPage(that.currentPageIndex+1, 150);
+								that.slideToPage(that.currentPageIndex+1, 100);
 						}, 1000);
 					}else if(pagey<iconHeight/5){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex-1 >= 0)
-								that.slideToPage(that.currentPageIndex-1, 150);
+								that.slideToPage(that.currentPageIndex-1, 100);
 						}, 1000);
 					}
 					else{
@@ -306,12 +305,12 @@
 					if(pagex>iconWidth*3.7){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex+1 < that.pagesCount)
-								that.slideToPage(that.currentPageIndex+1, 150);
+								that.slideToPage(that.currentPageIndex+1, 100);
 						}, 1000);
 					}else if(pagex<iconWidth/3){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex-1 >= 0)
-								that.slideToPage(that.currentPageIndex-1, 150);
+								that.slideToPage(that.currentPageIndex-1, 100);
 						}, 1000);
 					}else{
 						clearTimeout(this.timeout);
@@ -338,10 +337,11 @@
 			var tmpNode = this.target.cloneNode(true);
 			tmpNode.onclick = this.target.onclick;
 			try{
-				if(this.target.id != icon[icon.length-1].id && this.to<pageLen){
-					console.log(this.to-1);
-					document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.target);
-					document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);							
+				if(this.pageIndexMem == this.currentPageIndex){
+					if(this.target.id != icon[icon.length-1].id && this.to<pageLen){
+						document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.target);
+						document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);							
+					}
 				}
 				else{
 					if(document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length<16){
@@ -583,7 +583,10 @@
 			div.style.zIndex = "100";
 			document.body.appendChild(div);		
 		},
-		
+		//means: move apps across pages
+		MAAP: function(node, fromPage, toPage, position){
+			
+		}
 	};
 	return base;
 })(window);
