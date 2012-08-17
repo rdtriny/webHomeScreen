@@ -56,6 +56,8 @@
 		stopTouchEnd: false,
 		isVertical: false,
 		isDragging: false,
+		//we can't remove DOM nodes in the touchmove process, it will cause touchmove listener fail to react to your touchmove. remove the element at touchend.
+		toBeRemove: null,
 		touchstart: function(e){			
 			this.pinchEndLen = 0;
 			this.longtapStart = false;
@@ -124,15 +126,16 @@
 						e.target.dispatchEvent(pinchEvent);
 					}
 				}
-			}else{
+			}else{						
 				this.dragMove(e);
 			}
 		},
-		touchend: function(e){
+		touchend: function(e){			
+			this.dragEnd(e);
 			if(this.stopTouchEnd){
 				this.stopTouchEnd = false;
 				return ;
-			}
+			}			
 			if(!this.longtapStart){
 				clearTimeout(this.longTapIndex);
 				if(this.endX){
@@ -158,7 +161,6 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-				this.dragEnd(e);
 			}	
 			
 			var now = new Date;
@@ -289,13 +291,16 @@
 				if(that.isVertical){
 					if(pagey>iconHeight*3.9){
 						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount)
+							if(that.currentPageIndex+1 < that.pagesCount){
 								that.slideToPage(that.currentPageIndex+1, 100);
+								that.MAAP();
+							}
 						}, 1000);
 					}else if(pagey<iconHeight/5){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex-1 >= 0)
 								that.slideToPage(that.currentPageIndex-1, 100);
+								that.MAAP();
 						}, 1000);
 					}
 					else{
@@ -306,11 +311,13 @@
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex+1 < that.pagesCount)
 								that.slideToPage(that.currentPageIndex+1, 100);
+								that.MAAP();
 						}, 1000);
 					}else if(pagex<iconWidth/3){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex-1 >= 0)
 								that.slideToPage(that.currentPageIndex-1, 100);
+								that.MAAP();
 						}, 1000);
 					}else{
 						clearTimeout(this.timeout);
@@ -319,8 +326,16 @@
 			}
 			var row = Math.round(pagey/iconHeight); //25% height
 			var column = Math.round(pagex/iconWidth); //25% width
-			this.target.style.left= (pagex-that.startX) + "px";
-			this.target.style.top = (pagey-that.startY) + "px";
+			if(this.pageIndexMem == this.currentPageIndex){
+				this.target.style.left = (pagex-that.startX) + "px";
+				this.target.style.top  = (pagey-that.startY) + "px";
+			}
+			else{
+				var len = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length;
+				this.target.style.position = "relative";
+				this.target.style.left = (pagex-(len%4-0.5)*iconWidth) + "px";
+				this.target.style.top  = (pagey-(Math.floor(len/4)+0.5)*iconHeight) + "px";
+			}
 			row = row||1;
 			this.to = (row-1)*4+column;
 			that.switchNode(this.target, this.to);
@@ -330,25 +345,26 @@
 				return ;
 			}
 			clearTimeout(this.timeout);
-			this.timeout = undefined;
-			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
-			var pageLen = icon.length;
 			this.target.style.webkitTransform = "";
+			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
+			var pageLen = icon.length;			
 			var tmpNode = this.target.cloneNode(true);
 			tmpNode.onclick = this.target.onclick;
 			try{
 				if(this.pageIndexMem == this.currentPageIndex){
-					if(this.target.id != icon[icon.length-1].id && this.to<pageLen){
-						document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.target);
-						document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);							
+					if(this.to<pageLen){
+						document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
+						document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
+					}else{
+						document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
+						document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);	
 					}
 				}
 				else{
-					if(document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length<16){
-						document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.target);
-						document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);
-					}else{
-						throw "This page is full, no space for other apps.";
+					document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.toBeRemove);
+					if(this.to<pageLen){
+						document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
+						document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
 					}
 				}
 			}
@@ -361,6 +377,8 @@
 				allIcon[i].style.top ="";
 				allIcon[i].setAttribute("elPos", i+1);
 			}
+			this.isDragging = false;			
+			this.timeout = false;
 		},
 		switchNode: function(node, to){
 			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
@@ -407,12 +425,14 @@
 			if(this.isVertical){
 				var y = pageIndex*pageHeight;
 				this.css3move(this.container, {x:0, y:y}, time);
-				this.moveStartY = y;
+				this.moveStartY = y;				
+				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*pageIndex+"%";
 			}
 			else{
 				var x = pageIndex*pageWidth*-1;
 				this.css3move(this.container, {x:x, y:0}, time);
-				this.moveStartX = x;
+				this.moveStartX = x;				
+				document.body.style.backgroundPosition = (100/this.pagesCount)*pageIndex+"% 0%";
 			}
 			this.stopTouchEnd = true;
 			this.currentPageIndex = pageIndex;
@@ -581,11 +601,19 @@
 			div.style.bottom = "0";
 			div.style.backgroundColor = "#888888";
 			div.style.zIndex = "100";
+			div.id = "fixed";
 			document.body.appendChild(div);		
 		},
 		//means: move apps across pages
-		MAAP: function(node, fromPage, toPage, position){
-			
+		MAAP: function(){
+			if(document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length<16){
+				var tmpNode = this.target.cloneNode(true);
+				this.toBeRemove = this.target;
+				var click = this.target.onclick;				
+				document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);
+				this.target = tmpNode;
+				this.target.onclick = click;
+			}
 		}
 	};
 	return base;
@@ -719,18 +747,6 @@ system.register({title:"phone",packageName:"com.orange.phone",imgSrc:"./images/p
 system.register({title:"picture",packageName:"com.orange.picture",imgSrc:"./images/picture.png",widget:""})
 system.register({title:"recorder",packageName:"com.orange.recorder",imgSrc:"./images/recorder.png",widget:""})
 system.register({title:"store",packageName:"com.orange.store",imgSrc:"./images/store.png",widget:""})
-
-system.register({title:"alarm",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
-system.register({title:"tv",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
-system.register({title:"message",packageName:"com.orange.message",imgSrc:"./images/message.png",widget:""})
-system.register({title:"browser",packageName:"com.orange.browser",imgSrc:"./images/browser.png",widget:""})
-system.register({title:"caculator",packageName:"com.orange.caculator",imgSrc:"./images/calculator.png",widget:""})
-system.register({title:"calendar",packageName:"com.orange.calendar",imgSrc:"./images/calendar.png",widget:""})
-system.register({title:"camera",packageName:"com.orange.camera",imgSrc:"./images/camera.png",widget:""})
-system.register({title:"chat",packageName:"com.orange.chat",imgSrc:"./images/chat.png",widget:""})
-system.register({title:"clock",packageName:"com.orange.clock",imgSrc:"./images/clock.png",widget:""})
-system.register({title:"game",packageName:"com.orange.game",imgSrc:"./images/game.png",widget:""})
-system.register({title:"phone",packageName:"com.orange.phone",imgSrc:"./images/phone.png",widget:""})
 }, 2000);
 
 window.addEventListener("gestureend", function(){
