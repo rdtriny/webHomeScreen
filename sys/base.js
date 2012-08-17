@@ -351,20 +351,23 @@
 			var tmpNode = this.target.cloneNode(true);
 			tmpNode.onclick = this.target.onclick;
 			try{
-				if(this.pageIndexMem == this.currentPageIndex){
-					if(this.to<pageLen){
-						document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
-						document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
-					}else{
-						document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
-						document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);	
+				if(typeof(this.to)=="number"){
+					if(this.pageIndexMem == this.currentPageIndex){
+						console.log(this.to +"         "+pageLen);
+						if(this.to<pageLen){
+							document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
+							document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
+						}else{
+							document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
+							document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);	
+						}
 					}
-				}
-				else{
-					document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.toBeRemove);
-					if(this.to<pageLen){
-						document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
-						document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
+					else{
+						document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.toBeRemove);
+						if(this.to<pageLen){
+							document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
+							document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
+						}
 					}
 				}
 			}
