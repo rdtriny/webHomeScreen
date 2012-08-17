@@ -33,7 +33,7 @@ Events system:
 		3. orientationchange
 		4. resize
 		5. cache releated
-		6. drag
+		6. drag(this one is quite difficult to implement, case you have to move DOM nodes across different DIVs.)
 		7. swipe
 		8. pinch (only available on android 4.0+) 
 		
