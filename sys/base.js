@@ -298,9 +298,10 @@
 						}, 1000);
 					}else if(pagey<iconHeight/5){
 						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0)
+							if(that.currentPageIndex-1 >= 0){
 								that.slideToPage(that.currentPageIndex-1, 100);
 								that.MAAP();
+							}
 						}, 1000);
 					}
 					else{
@@ -309,15 +310,17 @@
 				}else{
 					if(pagex>iconWidth*3.7){
 						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount)
+							if(that.currentPageIndex+1 < that.pagesCount){
 								that.slideToPage(that.currentPageIndex+1, 100);
 								that.MAAP();
+							}
 						}, 1000);
 					}else if(pagex<iconWidth/3){
 						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0)
+							if(that.currentPageIndex-1 >= 0){
 								that.slideToPage(that.currentPageIndex-1, 100);
 								that.MAAP();
+							}
 						}, 1000);
 					}else{
 						clearTimeout(this.timeout);
