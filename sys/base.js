@@ -382,6 +382,7 @@
 			}
 			this.isDragging = false;			
 			this.timeout = false;
+			this.to = false;
 		},
 		switchNode: function(node, to){
 			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
