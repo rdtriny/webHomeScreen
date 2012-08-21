@@ -52,13 +52,16 @@
 		nextToEndY: 0,
 		endX: 0,
 		endY: 0,
+		sidebar: null,
+		activeIndex: null,
 		lastMoveTime: undefined,
 		stopTouchEnd: false,
 		isVertical: false,
 		isDragging: false,
 		//we can't remove DOM nodes in the touchmove process, it will cause touchmove listener fail to react to your touchmove. remove the element at touchend.
 		toBeRemove: null,
-		touchstart: function(e){			
+		touchstart: function(e){					
+			this.sideBar(true);
 			this.pinchEndLen = 0;
 			this.longtapStart = false;
 			if(e.touches.length === 1){
@@ -71,7 +74,8 @@
 					event.initEvent("longtap", true, true);
 					e.target.dispatchEvent(event);
 					that.longtapStart = true;
-					that.dragStart(e);
+					that.dragStart(e);							
+					that.sideBar(false);
 				}, 1000);
 			}
 			else if(e.touches.length === 2){
@@ -102,6 +106,7 @@
 						var dis = {x:0, y:y};
 						this.movedDistance = pagey-this.startY;				
 						document.body.style.backgroundPosition = "0 " + (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
+						this.sidebar.style.top = (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
 					}
 					else{
 						var x = pagex-this.startX + this.moveStartX;					
@@ -112,7 +117,8 @@
 							x=maxWidth;
 						var dis = {x:x, y:0};
 						this.movedDistance = pagex-this.startX;					
-						document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";
+						document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";						
+						this.sidebar.style.left = (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
 						console.log(document.body.style.backgroundPosition);
 					}
 					this.css3move(this.container, dis);
@@ -126,7 +132,7 @@
 						e.target.dispatchEvent(pinchEvent);
 					}
 				}
-			}else{						
+			}else{
 				this.dragMove(e);
 			}
 		},
@@ -192,7 +198,9 @@
 				}			
 				this.moveStartY = y;
 				this.css3move(this.container, {x:0, y:y}, 100);
-				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*this.currentPageIndex+"%";
+				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*this.currentPageIndex+"%";				
+				this.sidebar.style.top = (document.getElementById("appScreen").clientHeight/this.pagesCount)*this.currentPageIndex+"px";				
+				this.sideBar(false);
 			}
 			else{
 				var pageWidth = document.getElementById("appScreen").clientWidth;
@@ -214,8 +222,10 @@
 					x = this.currentPageIndex*pageWidth*-1;
 				}			
 				this.moveStartX = x;				
-				this.css3move(this.container, {x:x, y:0}, 100);				
+				this.css3move(this.container, {x:x, y:0}, 100);			
 				document.body.style.backgroundPosition = (100/this.pagesCount)*this.currentPageIndex+"% 0%";
+				this.sidebar.style.left = (document.getElementById("appScreen").clientWidth/this.pagesCount)*this.currentPageIndex+"px";
+				this.sideBar(false);
 			}			
 		},
 		touchcancel: function(e){
@@ -271,8 +281,18 @@
 			while(!target.id && target.id!="iconsContainer"){
 				target = target.parentNode;
 			}
+			target.style.webkitTransformOrigin="50% 50%";
 			if(/[A-z0-9]+\./ig.test(target.id)){
-				target.style.webkitTransform = "scale(1.2)";
+				var angle = 0;
+				this.activeIndex = setInterval(function(){
+					if(angle <10){
+						angle += 4;
+					}
+					else{
+						angle = -10;
+					}
+					target.style.webkitTransform = "rotate("+ angle +"deg)";					
+				}, 40);
 				this.isDragging = true;
 				this.target = target;
 			}
@@ -349,6 +369,7 @@
 			}
 			clearTimeout(this.timeout);
 			this.target.style.webkitTransform = "";
+			clearInterval(this.activeIndex);
 			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
 			var pageLen = icon.length;			
 			var tmpNode = this.target.cloneNode(true);
@@ -620,6 +641,43 @@
 				document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);
 				this.target = tmpNode;
 				this.target.onclick = click;
+			}
+		},
+		sideBar: function(isShow, pos){
+			if(pos){
+				if(this.isVertical){
+					this.sidebar.style.top = pos;
+				}else{
+					this.sidebar.style.left = pos;
+				}
+				return true;
+			}
+			if(!this.sidebar && isShow){
+				var sidebar = document.createElement("div");
+				sidebar.style.position = "absolute";
+				if(this.isVertical){
+					sidebar.style.right = "1px";
+					sidebar.style.width = "4px";
+					sidebar.style.height = (document.getElementById("appScreen").clientHeight/this.pagesCount)+"px";
+				}else{
+					sidebar.style.bottom = "1px";
+					sidebar.style.height = "4px";
+					sidebar.style.width = (document.getElementById("appScreen").clientWidth/this.pagesCount)+"px";
+				}
+				sidebar.style.backgroundColor = "black";
+				sidebar.style.opacity = "0.4";
+				sidebar.style.borderRadius = "2px";
+				sidebar.style.zIndex = "999";
+				sidebar.style.webkitTransitionDuration = ".3s";
+				document.body.appendChild(sidebar);
+				this.sidebar = sidebar;
+			}else if(this.sidebar && isShow){
+				this.sidebar.style.display = "block";
+			}else{
+				var that = this;
+				setTimeout(function(){
+					that.sidebar.style.display = "none";
+				},500);
 			}
 		}
 	};
