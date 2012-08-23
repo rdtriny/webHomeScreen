@@ -53,13 +53,11 @@
 		endX: 0,
 		endY: 0,
 		sidebar: null,
-		activeIndex: null,
 		lastMoveTime: undefined,
 		stopTouchEnd: false,
 		isVertical: false,
 		isDragging: false,
-		//we can't remove DOM nodes in the touchmove process, it will cause touchmove listener fail to react to your touchmove. remove the element at touchend.
-		toBeRemove: null,
+		queue: [],
 		touchstart: function(e){					
 			this.sideBar(true);
 			this.pinchEndLen = 0;
@@ -136,7 +134,7 @@
 				this.dragMove(e);
 			}
 		},
-		touchend: function(e){			
+		touchend: function(e){
 			this.dragEnd(e);
 			if(this.stopTouchEnd){
 				this.stopTouchEnd = false;
@@ -250,7 +248,7 @@
 				appNode = document.createElement("div");
 				appNode.className = "icon";
 				appNode.id = app.packageName;				
-				appNode.setAttribute("elPos", this.appsCount);
+				appNode.setAttribute("elPos", this.appsCount);				
 				
 				var img = document.createElement("img");
 				img.src = app.imgSrc;
@@ -265,186 +263,21 @@
 		//register application to the system.
 		register: function(app){
 			this.appsCount ++;
-			if(this.appsCount%(this.appsPerRow*this.appsPerColumn)==1){
-				this.managePages(1);
-			}
 			var appNode = this.createAppNode(app);
-			this.display(appNode);
 			if(app.widget){
 				this.addWidget(app.widget ,appNode);
 				appNode.setAttribute("isWidget", "true");
 			}
+			this.queue.push(appNode);
 		},
-		dragStart: function(e){
-			var target = e.target;
-			this.pageIndexMem = this.currentPageIndex;
-			while(!target.id && target.id!="iconsContainer"){
-				target = target.parentNode;
+		init: function(){
+			var appNode = false;
+			this.pagesCount = Math.ceil(this.appsCount/(this.appsPerRow*this.appsPerColumn));
+			for(var i=0; i<this.appsCount; i++){
+				appNode = this.queue[i];
+				this.display(appNode);
 			}
-			target.style.webkitTransformOrigin="50% 50%";
-			if(/[A-z0-9]+\./ig.test(target.id)){
-				var angle = 0;
-				this.activeIndex = setInterval(function(){
-					if(angle <10){
-						angle += 4;
-					}
-					else{
-						angle = -10;
-					}
-					target.style.webkitTransform = "rotate("+ angle +"deg)";					
-				}, 40);
-				this.isDragging = true;
-				this.target = target;
-			}
-		},
-		dragMove: function(e){
-			if(!this.isDragging){
-				return ;
-			}
-			var that = this;									
-			var pagex = e.touches[0].pageX;
-			var pagey = e.touches[0].pageY;
-			var icon = document.getElementsByClassName("icon")[0];
-			var iconHeight = icon.clientHeight;
-			var iconWidth = icon.clientWidth;
-			if(!this.timeout){
-				if(that.isVertical){
-					if(pagey>iconHeight*3.9){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount){
-								that.slideToPage(that.currentPageIndex+1, 100);
-								that.MAAP();
-							}
-						}, 1000);
-					}else if(pagey<iconHeight/5){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0){
-								that.slideToPage(that.currentPageIndex-1, 100);
-								that.MAAP();
-							}
-						}, 1000);
-					}
-					else{
-						clearTimeout(this.timeout);
-					}
-				}else{
-					if(pagex>iconWidth*3.7){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount){
-								that.slideToPage(that.currentPageIndex+1, 100);
-								that.MAAP();
-							}
-						}, 1000);
-					}else if(pagex<iconWidth/3){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0){
-								that.slideToPage(that.currentPageIndex-1, 100);
-								that.MAAP();
-							}
-						}, 1000);
-					}else{
-						clearTimeout(this.timeout);
-					}
-				}
-			}
-			var row = Math.round(pagey/iconHeight); //25% height
-			var column = Math.round(pagex/iconWidth); //25% width
-			if(this.pageIndexMem == this.currentPageIndex){
-				this.target.style.left = (pagex-that.startX) + "px";
-				this.target.style.top  = (pagey-that.startY) + "px";
-			}
-			else{
-				var len = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length;
-				this.target.style.position = "relative";
-				this.target.style.left = (pagex-(len%4-0.5)*iconWidth) + "px";
-				this.target.style.top  = (pagey-(Math.floor(len/4)+0.5)*iconHeight) + "px";
-			}
-			row = row||1;
-			this.to = (row-1)*4+column;
-			that.switchNode(this.target, this.to);
-		},
-		dragEnd: function(e){
-			if(!this.isDragging){
-				return ;
-			}
-			clearTimeout(this.timeout);
-			this.target.style.webkitTransform = "";
-			clearInterval(this.activeIndex);
-			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
-			var pageLen = icon.length;			
-			var tmpNode = this.target.cloneNode(true);
-			tmpNode.onclick = this.target.onclick;
-			try{
-				if(typeof(this.to)=="number"){
-					if(this.pageIndexMem == this.currentPageIndex){
-						console.log(this.to +"         "+pageLen);
-						if(this.to<pageLen){
-							document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
-							document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
-						}else{
-							document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
-							document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);	
-						}
-					}
-					else{
-						document.getElementsByClassName("page")[this.pageIndexMem].removeChild(this.toBeRemove);
-						if(this.to<pageLen){
-							document.getElementsByClassName("page")[this.currentPageIndex].removeChild(this.target);
-							document.getElementsByClassName("page")[this.currentPageIndex].insertBefore(tmpNode, icon[this.to-1]);
-						}
-					}
-				}
-			}
-			catch(error){
-				console.log(error);
-			}
-			var allIcon = document.getElementsByClassName("icon");
-			for(var i=0; i<allIcon.length; i++){
-				allIcon[i].style.left="";
-				allIcon[i].style.top ="";
-				allIcon[i].setAttribute("elPos", i+1);
-			}
-			this.isDragging = false;			
-			this.timeout = false;
-			this.to = false;
-		},
-		switchNode: function(node, to){
-			var icon = document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon");
-			var from;
-			var len = icon.length;
-			if(to>len)
-				to = len;
-			for(var i=0; i<len; i++){
-				if(node.id == icon[i].id){
-					from = i+1;
-				}else{					
-					icon[i].style.left = "";
-					icon[i].style.top = "";
-				}
-			}
-			if(from < to){
-				for(var i=from; i<to; i++){
-					if(icon[i]){
-						if(i%4==0){
-							icon[i].style.left="75%";
-							icon[i].style.top ="-25%";
-						}else{
-							icon[i].style.left="-25%";
-						}
-					}
-				}
-			}else{
-				for(var i=to-1; i<from-1; i++){
-					if(icon[i]){
-						if(i%4==3){
-							icon[i].style.left="-75%";
-							icon[i].style.top ="25%";
-						}else{
-							icon[i].style.left="25%";
-						}
-					}
-				}
-			}
+			this.styleApp();
 		},
 		//switch the pages left or right.
 		slideToPage: function(pageIndex, time){
@@ -474,38 +307,28 @@
 			el.style.webkitTransitionTimingFunction = 'cubic-bezier(0.33,0.66,0.66,1)';
 		},
 		//manage the pages which is hosting app icons. inc for increment
-		managePages: function(inc){
-			var pages = document.getElementsByClassName("page");
-			this.pagesCount += inc;			
-			if(inc>0){
-				for(var i=0; i<inc; i++){
-					var page = document.createElement("div");
-					page.className = "page";
-					this.container.appendChild(page);
-				}
-			}
-			else{
-				for(var i=0; i<(-inc); i++){
-					this.container.removeChild(pages[this.pagesCount+i]);
-				}
-			}
+		styleApp: function(){
+			var icons = this.container.getElementsByClassName("icon");
 			if(this.isVertical){
-				this.container.style.height = 100*this.pagesCount+"%";			
-				for(var j=0; j<this.pagesCount; j++){
-					pages[j].style.height = (100/this.pagesCount)+"%";
-					pages[j].style.clear = "both";
+				this.container.style.height = 100*this.pagesCount+"%";
+				for(var i=0; i<icons.length; i++){
+					icons[i].style.height = 100/(this.pagesCount*this.appsPerColumn)+"%";						
+					icons[i].style.left = (i%this.appsPerRow)*(100/this.appsPerRow)+"%";
+					icons[i].style.top = Math.floor(i/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 				}
 			}
 			else{
-				this.container.style.width = 100*this.pagesCount+"%";			
-				for(var j=0; j<this.pagesCount; j++){
-					pages[j].style.width = (100/this.pagesCount)+"%";
+				this.container.style.width = 100*this.pagesCount+"%";
+				for(var i=0; i<icons.length; i++){					
+					icons[i].style.height = 100/(this.pagesCount*this.appsPerRow)+"%";						
+					icons[i].style.left = (i%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+					icons[i].style.top = Math.floor(i/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
 				}
-			}
+			}						
 		},
 		//display all the app icons to the screen.
 		display: function(appNode){
-			document.getElementsByClassName("page")[this.pagesCount-1].appendChild(appNode);
+			this.container.appendChild(appNode);
 		},
 		//update the appearence of the app, change appStyle(a function)
 		updateAppStyle: function(func){
@@ -542,7 +365,7 @@
 			var elPos = this.elPos;
 			elPos -= 1;
 			var icons = document.getElementsByClassName("icon");
-			var lineHeight = 100/this.appsPerColumn;
+			var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
 			if(direction == "down"){
 				for(var i=1; i<blockNum; i++){
 						if(icons[elPos+i])
@@ -587,7 +410,7 @@
 			var elPos = this.elPos;
 			elPos -= 1;
 			var icons = document.getElementsByClassName("icon");			
-			var lineHeight = 100/this.appsPerColumn;
+			var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
 			if(direction == "up"){
 				for(var i=1; i<blockNum; i++){
 						if(icons[elPos+i])
@@ -621,6 +444,24 @@
 				}
 			}
 		},
+		initDragEvent: function(e){
+			var event = document.createEvent("Events");
+			event.initEvent("drag", true, true);
+			e.target.dispatchEvent(event);
+		}
+	};
+	base.fn = base.prototype;
+	base.fn.extend = function(){
+		if(arguments.length == 1){
+			var target = this;
+			if(typeof arguments[0] == "object"){
+				for( var name in arguments[0]){
+					target[name] = arguments[0][name];
+				}
+			}
+		}
+	}
+	base.fn.extend({
 		addFixedArea: function(){
 			var div = document.createElement("div");
 			div.style.width = "100%";
@@ -632,23 +473,12 @@
 			div.id = "fixed";
 			document.body.appendChild(div);		
 		},
-		//means: move apps across pages
-		MAAP: function(){
-			if(document.getElementsByClassName("page")[this.currentPageIndex].getElementsByClassName("icon").length<16){
-				var tmpNode = this.target.cloneNode(true);
-				this.toBeRemove = this.target;
-				var click = this.target.onclick;				
-				document.getElementsByClassName("page")[this.currentPageIndex].appendChild(tmpNode);
-				this.target = tmpNode;
-				this.target.onclick = click;
-			}
-		},
 		sideBar: function(isShow, pos){
 			if(pos){
 				if(this.isVertical){
-					this.sidebar.style.top = pos;
+					this.css3move(this.sidebar, {x:0, y:pos}, 100);
 				}else{
-					this.sidebar.style.left = pos;
+					this.css3move(this.sidebar, {x:pos, y:0}, 100);
 				}
 				return true;
 			}
@@ -659,6 +489,7 @@
 					sidebar.style.right = "1px";
 					sidebar.style.width = "4px";
 					sidebar.style.height = (document.getElementById("appScreen").clientHeight/this.pagesCount)+"px";
+					
 				}else{
 					sidebar.style.bottom = "1px";
 					sidebar.style.height = "4px";
@@ -666,9 +497,8 @@
 				}
 				sidebar.style.backgroundColor = "black";
 				sidebar.style.opacity = "0.4";
-				sidebar.style.borderRadius = "2px";
-				sidebar.style.zIndex = "999";
-				sidebar.style.webkitTransitionDuration = ".3s";
+				sidebar.style.borderRadius = "3px";
+				sidebar.style.zIndex = "99";
 				document.body.appendChild(sidebar);
 				this.sidebar = sidebar;
 			}else if(this.sidebar && isShow){
@@ -680,7 +510,204 @@
 				},500);
 			}
 		}
-	};
+	});
+	
+	base.fn.extend({
+		dragStart: function(e){
+			var target = e.target;
+			this.pageIndexMem = this.currentPageIndex;
+			while(!target.id && target.id!="iconsContainer"){
+				target = target.parentNode;
+			}
+			target.style.webkitTransformOrigin="50% 50%";
+			if(/[A-z0-9]+\./ig.test(target.id)){
+				var angle = 0;
+				target.style.webkitAnimationDuration= ".1s";
+				target.style.webkitAnimationName= "shake";
+				target.style.webkitAnimationIterationCount= "infinite";
+				this.isDragging = true;
+				this.target = target;
+			}
+		},
+		dragMove: function(e){
+			if(!this.isDragging){
+				return ;
+			}
+			if(this.queue[this.to-1])
+				this.queue[this.to-1].style.webkitBoxShadow = "";
+			this.initDragEvent(e);		
+			var that = this;
+			var pagex = e.touches[0].pageX;
+			var pagey = e.touches[0].pageY;
+			var icon = document.getElementsByClassName("icon")[0];
+			var iconHeight = icon.clientHeight;
+			var iconWidth = icon.clientWidth;
+			if(!this.timeout){
+				if(that.isVertical){
+					if(pagey>iconHeight*3.9){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex+1 < that.pagesCount){
+								that.slideToPage(that.currentPageIndex+1, 100);
+							}
+						}, 1000);
+					}else if(pagey<iconHeight/5){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex-1 >= 0){
+								that.slideToPage(that.currentPageIndex-1, 100);
+							}
+						}, 1000);
+					}
+					else{
+						clearTimeout(this.timeout);
+					}
+				}else{
+					if(pagex>iconWidth*3.7){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex+1 < that.pagesCount){
+								that.slideToPage(that.currentPageIndex+1, 100);
+							}
+						}, 1000);
+					}else if(pagex<iconWidth/3){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex-1 >= 0){
+								that.slideToPage(that.currentPageIndex-1, 100);
+							}
+						}, 1000);
+					}else{
+						clearTimeout(this.timeout);
+					}
+				}
+			}
+			var row = Math.round(pagey/iconHeight); //25% height
+			var column = Math.round(pagex/iconWidth+0.5); //25% width
+			if(this.isVertical){
+				this.target.style.left = (pagex-icon.clientWidth/2)+ "px";
+				this.target.style.top  = (pagey-icon.clientHeight/2)+this.currentPageIndex*document.getElementById("appScreen").clientHeight + "px";
+			}else{
+				this.target.style.left = (pagex-icon.clientWidth/2)+ this.currentPageIndex*document.getElementById("appScreen").clientHeight +"px";
+				this.target.style.top  = (pagey-icon.clientHeight/2)+"px";
+			}
+			row = row||1;
+			row += this.currentPageIndex*this.appsPerColumn;
+			this.to = (row-1)*4+column;	
+			if(this.queue[this.to-1]&&this.to!=(+this.target.getAttribute("elPos")))
+				this.queue[this.to-1].style.webkitBoxShadow = "0 0 5px 2px orange";
+		},
+		dragEnd: function(e){
+			if(!this.isDragging){
+				return ;
+			}
+			clearTimeout(this.timeout);
+			this.target.style.webkitAnimationName= "";
+			this.target.style.webkitAnimationIterationCount= "";
+			if(this.queue[this.to-1])
+				this.queue[this.to-1].style.webkitBoxShadow = "";
+			var icon = this.container.getElementsByClassName("icon");
+			var pageLen = icon.length;			
+			var tmpNode = this.target.cloneNode(true);
+			tmpNode.onclick = this.target.onclick;
+			var from = +this.target.getAttribute("elPos");
+			if(typeof(this.to)=="number"){
+				var des = this.to-1;				
+				if(this.pageIndexMem == this.currentPageIndex){
+					if(this.isVertical){
+						this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+						this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						this.target.setAttribute("elPos", this.to);
+						this.queue[des].style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
+						this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						this.queue[des].setAttribute("elPos", from);
+					}
+					else{
+						this.target.style.left = (des%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+						this.target.style.top = Math.floor(des/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+						this.target.setAttribute("elPos", this.to);
+						this.queue[des].style.left = ((from-1)%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+						this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+						this.queue[des].setAttribute("elPos", from);
+					}
+					this.switchQueue(from, this.to);
+				}else{
+					if(this.queue[des]){
+						this.target.style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
+						this.target.style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+					}else{
+						this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+						this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						this.target.setAttribute("elPos", this.to);
+						this.moveQueue(from, this.to);
+					}
+				}
+			}
+			this.isDragging = false;			
+			this.timeout = false;
+			this.to = false;
+		},
+		switchQueue: function(from, to){			
+			var tmp = this.queue[to-1];
+			this.queue[to-1] = this.queue[from-1];
+			this.queue[from-1] = tmp;
+		},
+		moveQueue: function(from, to){
+			var tmp = this.queue[from-1];
+			this.queue[to-1] = tmp;
+			this.queue[from-1] = undefined;
+		},
+		switchNode: function(node, to){			
+			var icon = this.container.getElementsByClassName("icon");
+			var from;
+			var len = icon.length;
+			if(to>len)
+				to = len;
+			for(var i=0; i<len; i++){
+				if(node.id == icon[i].id){
+					from = i+1;
+				}else{					
+					icon[i].style.left = "";
+					icon[i].style.top = "";
+				}
+			}
+			if(from < to){
+				for(var i=from; i<to; i++){
+					if(icon[i]){
+						if(i%4==0){
+							icon[i].style.left="75%";
+							icon[i].style.top ="-25%";
+						}else{
+							icon[i].style.left="-25%";
+						}
+					}
+				}
+			}else{
+				for(var i=to-1; i<from-1; i++){
+					if(icon[i]){
+						if(i%4==3){
+							icon[i].style.left="-75%";
+							icon[i].style.top ="25%";
+						}else{
+							icon[i].style.left="25%";
+						}
+					}
+				}
+			}
+		}
+	});
+	base.fn.extend({
+		listen: function(node, event, func, bool){
+			try{
+				if(typeof node=="object" && node.nodeType ==1 && ['click','dbclick','swipe','longtap','drag','pinch','touchstart','touchmove','touchend','touchcancel'].indexOf(event)!=-1){
+					node.addEventListener(event, func, bool);
+				}
+				else{
+					throw "wrong arguments, or event is not supported.";
+				}
+			}
+			catch(error){
+				console.log(error);
+			}
+		}
+	});
+	
 	return base;
 })(window);
 
@@ -812,6 +839,7 @@ system.register({title:"phone",packageName:"com.orange.phone",imgSrc:"./images/p
 system.register({title:"picture",packageName:"com.orange.picture",imgSrc:"./images/picture.png",widget:""})
 system.register({title:"recorder",packageName:"com.orange.recorder",imgSrc:"./images/recorder.png",widget:""})
 system.register({title:"store",packageName:"com.orange.store",imgSrc:"./images/store.png",widget:""})
+system.init();
 }, 2000);
 
 window.addEventListener("gestureend", function(){
