@@ -343,24 +343,6 @@
 		notify: function(){
 			
 		},
-		addWidget: function(widget, el){
-			var wdt = document.createElement("script");
-			wdt.src = widget;
-			wdt.type= "text/javascript";
-			document.head.appendChild(wdt);
-			window.el = el;
-			window.pageIndex = this.pagesCount;
-		},
-		removeWidget: function(widget){
-			var scripts = document.getElementsByTagName("script");
-			for(var i=0; i<scripts.length; i++){
-				if(scripts[i].src == widget){
-					scripts[i].parentNode.removeChild(scripts[i]);
-					return true;
-				}
-			}
-			return false;
-		},
 		yield: function(direction, blockNum){
 			var elPos = this.elPos;
 			elPos -= 1;
@@ -513,6 +495,7 @@
 	});
 	
 	base.fn.extend({
+		highlightBox: null,
 		dragStart: function(e){
 			var target = e.target;
 			this.pageIndexMem = this.currentPageIndex;
@@ -533,8 +516,6 @@
 			if(!this.isDragging){
 				return ;
 			}
-			if(this.queue[this.to-1])
-				this.queue[this.to-1].style.webkitBoxShadow = "";
 			this.initDragEvent(e);		
 			var that = this;
 			var pagex = e.touches[0].pageX;
@@ -590,8 +571,7 @@
 			row = row||1;
 			row += this.currentPageIndex*this.appsPerColumn;
 			this.to = (row-1)*4+column;	
-			if(this.queue[this.to-1]&&this.to!=(+this.target.getAttribute("elPos")))
-				this.queue[this.to-1].style.webkitBoxShadow = "0 0 5px 2px orange";
+			this.highlight(iconWidth);
 		},
 		dragEnd: function(e){
 			if(!this.isDragging){
@@ -600,10 +580,7 @@
 			clearTimeout(this.timeout);
 			this.target.style.webkitAnimationName= "";
 			this.target.style.webkitAnimationIterationCount= "";
-			if(this.queue[this.to-1])
-				this.queue[this.to-1].style.webkitBoxShadow = "";
-			var icon = this.container.getElementsByClassName("icon");
-			var pageLen = icon.length;			
+			this.highlight(false);		
 			var tmpNode = this.target.cloneNode(true);
 			tmpNode.onclick = this.target.onclick;
 			var from = +this.target.getAttribute("elPos");
@@ -653,40 +630,38 @@
 			this.queue[to-1] = tmp;
 			this.queue[from-1] = undefined;
 		},
-		switchNode: function(node, to){			
-			var icon = this.container.getElementsByClassName("icon");
-			var from;
-			var len = icon.length;
-			if(to>len)
-				to = len;
-			for(var i=0; i<len; i++){
-				if(node.id == icon[i].id){
-					from = i+1;
-				}else{					
-					icon[i].style.left = "";
-					icon[i].style.top = "";
-				}
+		highlight: function(sideLen){
+			if(sideLen === false){
+				this.highlightBox.style.display = "none";
+				return "closed";
 			}
-			if(from < to){
-				for(var i=from; i<to; i++){
-					if(icon[i]){
-						if(i%4==0){
-							icon[i].style.left="75%";
-							icon[i].style.top ="-25%";
-						}else{
-							icon[i].style.left="-25%";
-						}
-					}
-				}
+			if(!this.highlightBox){
+				var div = document.createElement("div");
+				div.style.height = sideLen*0.66 + "px";
+				div.style.width = sideLen*0.66 + "px";
+				div.style.marginTop = sideLen/4 +"px";
+				div.style.marginLeft = sideLen/6 +"px";
+				div.style.position = "absolute";
+				div.style.display = "none";
+				this.container.appendChild(div);
+				this.highlightBox = div;
 			}else{
-				for(var i=to-1; i<from-1; i++){
-					if(icon[i]){
-						if(i%4==3){
-							icon[i].style.left="-75%";
-							icon[i].style.top ="25%";
-						}else{
-							icon[i].style.left="25%";
-						}
+				var des = this.to - 1;
+				this.highlightBox.style.display = "block";
+				if(this.pageIndexMem == this.currentPageIndex){
+					this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+					this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
+				}
+				else{
+					if(this.queue[des]){
+						this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+						this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px red";
+					}else{						
+						this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+						this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
 					}
 				}
 			}
@@ -707,7 +682,58 @@
 			}
 		}
 	});
-	
+	base.fn.extend({
+		widgets: {},
+		addWidget: function(widget, el){
+			var wdt = document.createElement("script");
+			wdt.src = widget;
+			wdt.type= "text/javascript";
+			document.head.appendChild(wdt);
+		},
+		removeWidget: function(widget){
+			var scripts = document.getElementsByTagName("script");
+			for(var i=0; i<scripts.length; i++){
+				if(scripts[i].src == widget){
+					scripts[i].parentNode.removeChild(scripts[i]);
+					return true;
+				}
+			}
+			return false;
+		},
+		logWidget: function(wgt){
+			for(var i in wgt){
+				this.widgets[i] = wgt[i];
+				try{
+					if(typeof wgt[i].widget == "string"){
+						this.widgets[i].widget = document.getElementById(wgt[i].widget);
+					}else if(typeof wgt[i].widget == "object" && wgt[i].widget.nodeType == 1){
+						this.widgets[i].widget = wgt[i].widget;
+					}else{
+						throw "wrong widget type, it should be DOM node or elemetn ID";
+					}
+				}
+				catch (e){
+					console.log(e);
+				}
+				this.initWidget(i, wgt[i]);
+			}
+		},
+		//add some listeners on the widget.
+		initWidget: function(i,obj){
+			if(typeof obj.open.node == "string"){
+				this.widgets[i].open.node = document.getElementById(obj.open.node);
+			}else if(typeof obj.open.node == "object" && obj.open.node.nodeType == 1){
+				this.widgets[i].open.node = obj.open.node;
+			}
+			if(typeof obj.close.node == "string"){
+				this.widgets[i].close.node = document.getElementById(obj.close.node);
+			}else if(typeof obj.close.node == "object" && obj.close.node.nodeType == 1){
+				this.widgets[i].close.node = obj.close.node;
+			}
+			this.widgets[i].open.node.addEventListener("dbclick", obj.open.func, false);
+			this.widgets[i].close.node.addEventListener("dbclick", obj.close.func, false);
+		}
+	});
 	return base;
 })(window);
 
@@ -759,7 +785,7 @@ var spriteMovie = (function(){
 				}
 			},10);
 		},
-		play: function(fps){					
+		play: function(fps){
 			this.setFlashWindow(this.flashWindow, this.movieArray, 0);
 			fps = fps || 16;
 			var time = 1000/fps;
