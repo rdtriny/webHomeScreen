@@ -91,8 +91,7 @@
 					this.nextToEndX = this.endX;
 					this.nextToEndY = this.endY;
 					var pagex = this.endX = e.touches[0].pageX;
-					var pagey = this.endY = e.touches[0].pageY;
-					
+					var pagey = this.endY = e.touches[0].pageY;					
 					if(this.isVertical){
 						var y = this.startY-pagey + this.moveStartY;
 						var maxHeight = document.getElementById("appScreen").clientHeight*(this.pagesCount-1);
@@ -117,7 +116,6 @@
 						this.movedDistance = pagex-this.startX;					
 						document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";						
 						this.sidebar.style.left = (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
-						console.log(document.body.style.backgroundPosition);
 					}
 					this.css3move(this.container, dis);
 				}
@@ -499,15 +497,17 @@
 		dragStart: function(e){
 			var target = e.target;
 			this.pageIndexMem = this.currentPageIndex;
-			while(!target.id && target.id!="iconsContainer"){
+			while(target.parentNode && target.parentNode.id!="iconsContainer"){
 				target = target.parentNode;
 			}
-			target.style.webkitTransformOrigin="50% 50%";
-			if(/[A-z0-9]+\./ig.test(target.id)){
-				var angle = 0;
+			if(/[A-z0-9]+\./ig.test(target.id)){	
+				target.style.webkitTransformOrigin="50% 50%";
 				target.style.webkitAnimationDuration= ".1s";
 				target.style.webkitAnimationName= "shake";
 				target.style.webkitAnimationIterationCount= "infinite";
+				this.isDragging = true;
+				this.target = target;
+			}else if(target.getAttribute('iWidget')){
 				this.isDragging = true;
 				this.target = target;
 			}
@@ -614,6 +614,9 @@
 						this.target.setAttribute("elPos", this.to);
 						this.moveQueue(from, this.to);
 					}
+				}
+				if(this.target.getAttribute("isWidget")){
+					this.locateWidget(this.target.id, this.target.style.top, this.target.style.left)
 				}
 			}
 			this.isDragging = false;			
@@ -732,6 +735,11 @@
 			}
 			this.widgets[i].open.node.addEventListener("dbclick", obj.open.func, false);
 			this.widgets[i].close.node.addEventListener("dbclick", obj.close.func, false);
+		},
+		locateWidget: function(wgt, top, left){
+			var widget = this.widgets[wgt].widget;
+			widget.style.left = left;
+			widget.style.top = top;
 		}
 	});
 	return base;
