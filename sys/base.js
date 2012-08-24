@@ -222,15 +222,15 @@
 			this.touchend(e);
 		},
 		click: function(e){
-			var now = new Date;
+			var now = new Date;			
+			var target = e.target;
 			if(now - this.lastClickTime<400){
 				clearTimeout(this.clickIndex);
 				var event = document.createEvent("Events");
 				event.initEvent("dbclick", true, true);
 				e.target.dispatchEvent(event);
 			}else{
-				this.clickIndex = setTimeout(function(e){
-					var target = e.target;
+				this.clickIndex = setTimeout(function(){
 					while(!target.id && target.id!="iconsContainer"){
 						target = target.parentNode;
 					}
@@ -450,6 +450,7 @@
 		}
 	}
 	base.fn.extend({
+		tray: null,
 		addFixedArea: function(){
 			var div = document.createElement("div");
 			div.style.width = "100%";
@@ -459,6 +460,7 @@
 			div.style.backgroundColor = "#888888";
 			div.style.zIndex = "100";
 			div.id = "fixed";
+			this.tray = div;
 			document.body.appendChild(div);		
 		},
 		sideBar: function(isShow, pos){
@@ -831,6 +833,41 @@
 			return str;
 		}
 	})[0];
+	
+	base.fn.extend({
+		moveToTray: function(){
+			var target = document.cloneNode(this.target);
+			if(this.checkFull())
+				this.tray.appendChild(target);
+			
+			this.arrange();
+		},
+		delOld: function(parent, son){
+			parent.removeChild(son);
+		},
+		checkFull: function(){
+			var icons = this.tray.getElementsByClassName("icon");
+			if(icons.length>5){
+				return false;
+			}
+			return true;
+		},
+		arrange: function(){
+			var icons = this.tray.getElementsByClassName("icon");
+			for(var i=0; i<icons.length; i++){
+				icons[i].style.width = 100/icons.length + "%";
+				icons[i].style.height = "100%";
+			}
+		},
+		moveOutTray: function(){
+			var target = document.cloneNode(this.target);
+			if(this.checkFull())
+				this.container.appendChild(target);
+			
+			this.arrange();
+		}
+	});
+	
 	return base;
 })(window);
 
