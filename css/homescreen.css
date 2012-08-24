@@ -61,9 +61,9 @@
 }
 @-webkit-keyframes shake{
 	from{
-		-webkit-transfrom: rotate(-10deg);
+		margin-top: 0px;
 	}
 	to	{
-		-webkit-transform: rotate(10deg);
+		margin-top: -10px;
 	}
 }
