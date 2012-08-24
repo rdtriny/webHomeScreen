@@ -437,12 +437,15 @@
 	};
 	base.fn = base.prototype;
 	base.fn.extend = function(){
+		var values = [];
 		if(arguments.length == 1){
 			var target = this;
 			if(typeof arguments[0] == "object"){
 				for( var name in arguments[0]){
 					target[name] = arguments[0][name];
+					values.push(arguments[0][name]);
 				}
+				return values;
 			}
 		}
 	}
@@ -797,7 +800,7 @@
 		}
 	});
 	
-	base.fn.extend({
+	var debug = base.debug = base.fn.extend({
 		// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
 		debug: function(){
 			var str="";
@@ -808,7 +811,7 @@
 							str += " {";
 							str += j;
 							str += ":";
-							str += log(arguments[i][j]);
+							str += debug(arguments[i][j]);
 							str += "}, ";
 						}
 						else{
@@ -824,9 +827,10 @@
 					str += arguments[i];				
 				}
 			}
+			console.log(str);
 			return str;
 		}
-	});
+	})[0];
 	return base;
 })(window);
 
