@@ -40,6 +40,7 @@
 		longtapStart: false,
 		dbclickInterval: null,
 		lastClickTime: 0,
+		clickIndex: null,
 		appsPerRow: 4,
 		appsPerColumn: 4,
 		appsCount: 0,
@@ -58,6 +59,8 @@
 		isVertical: false,
 		isDragging: false,
 		queue: [],
+		iconWidth: 0,
+		iconHeight: 0,
 		touchstart: function(e){					
 			this.sideBar(true);
 			this.pinchEndLen = 0;
@@ -163,16 +166,7 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-			}	
-			
-			var now = new Date;
-			if(now - this.lastClickTime<200){
-				var event = document.createEvent("Events");
-				event.initEvent("dbclick", true, true);
-				e.target.dispatchEvent(event);
-			}
-			this.lastClickTime = now;
-			
+			}				
 			if(this.isVertical){
 				var pageHeight = document.getElementById("appScreen").clientHeight;
 				var percent = this.movedDistance / pageHeight;
@@ -228,15 +222,26 @@
 			this.touchend(e);
 		},
 		click: function(e){
-			var target = e.target;
-			while(!target.id && target.id!="iconsContainer"){
-				target = target.parentNode;
+			var now = new Date;
+			if(now - this.lastClickTime<400){
+				clearTimeout(this.clickIndex);
+				var event = document.createEvent("Events");
+				event.initEvent("dbclick", true, true);
+				e.target.dispatchEvent(event);
+			}else{
+				this.clickIndex = setTimeout(function(e){
+					var target = e.target;
+					while(!target.id && target.id!="iconsContainer"){
+						target = target.parentNode;
+					}
+					
+					if(/[A-z0-9]+\./ig.test(target.id)){				
+						console.log(target.id);
+						//location.href = target.id;
+					}
+				}, 400);
 			}
-			if(/[A-z0-9]+\./ig.test(target.id)){
-				this.elPos = target.getAttribute("elPos");
-				console.log(target.id);
-				//location.href = target.id;
-			}
+			this.lastClickTime = now;			
 		},
 		createAppNode: function(app){
 			var appNode;
@@ -322,7 +327,7 @@
 					icons[i].style.left = (i%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
 					icons[i].style.top = Math.floor(i/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
 				}
-			}						
+			}
 		},
 		//display all the app icons to the screen.
 		display: function(appNode){
@@ -500,10 +505,11 @@
 			while(target.parentNode && target.parentNode.id!="iconsContainer"){
 				target = target.parentNode;
 			}
-			if(/[A-z0-9]+\./ig.test(target.id)){	
+			if(/[A-z0-9]+\./ig.test(target.id)){
 				target.style.webkitTransformOrigin="50% 50%";
-				target.style.webkitAnimationDuration= ".1s";
+				target.style.webkitAnimationDuration= ".5s";
 				target.style.webkitAnimationName= "shake";
+				target.style.webkitAnimationTimingFunction="ease";
 				target.style.webkitAnimationIterationCount= "infinite";
 				this.isDragging = true;
 				this.target = target;
@@ -520,57 +526,65 @@
 			var that = this;
 			var pagex = e.touches[0].pageX;
 			var pagey = e.touches[0].pageY;
-			var icon = document.getElementsByClassName("icon")[0];
-			var iconHeight = icon.clientHeight;
-			var iconWidth = icon.clientWidth;
-			if(!this.timeout){
-				if(that.isVertical){
-					if(pagey>iconHeight*3.9){
+			this.caculate();
+			var iconHeight = this.iconHeight;
+			var iconWidth = this.iconWidth;
+			if(that.isVertical){			
+				if(pagey>iconHeight*3.9){
+					if(!this.timeout){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex+1 < that.pagesCount){
 								that.slideToPage(that.currentPageIndex+1, 100);
 							}
-						}, 1000);
-					}else if(pagey<iconHeight/5){
+						}, 2000);
+					}
+				}else if(pagey<iconHeight*0.2){
+					if(!this.timeout){
 						this.timeout = setTimeout(function(){
 							if(that.currentPageIndex-1 >= 0){
 								that.slideToPage(that.currentPageIndex-1, 100);
 							}
-						}, 1000);
+						}, 2000);
 					}
-					else{
-						clearTimeout(this.timeout);
+				}
+				else{
+					clearTimeout(this.timeout);
+					this.timeout = false;
+				}
+			}else{
+				if(pagex>iconWidth*3.7){
+					if(!this.timeout){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex+1 < that.pagesCount){
+								that.slideToPage(that.currentPageIndex+1, 100);
+							}
+						}, 2000);
+					}
+				}else if(pagex<iconWidth/3){
+					if(!this.timeout){
+						this.timeout = setTimeout(function(){
+							if(that.currentPageIndex-1 >= 0){
+								that.slideToPage(that.currentPageIndex-1, 100);
+							}
+						}, 2000);
 					}
 				}else{
-					if(pagex>iconWidth*3.7){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount){
-								that.slideToPage(that.currentPageIndex+1, 100);
-							}
-						}, 1000);
-					}else if(pagex<iconWidth/3){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0){
-								that.slideToPage(that.currentPageIndex-1, 100);
-							}
-						}, 1000);
-					}else{
-						clearTimeout(this.timeout);
-					}
+					clearTimeout(this.timeout);
+					this.timeout = false;
 				}
 			}
 			var row = Math.round(pagey/iconHeight); //25% height
 			var column = Math.round(pagex/iconWidth+0.5); //25% width
 			if(this.isVertical){
-				this.target.style.left = (pagex-icon.clientWidth/2)+ "px";
-				this.target.style.top  = (pagey-icon.clientHeight/2)+this.currentPageIndex*document.getElementById("appScreen").clientHeight + "px";
+				this.target.style.left = (pagex-iconWidth/2)+ "px";
+				this.target.style.top  = (pagey-iconHeight/2)+this.currentPageIndex*document.getElementById("appScreen").clientHeight + "px";
 			}else{
-				this.target.style.left = (pagex-icon.clientWidth/2)+ this.currentPageIndex*document.getElementById("appScreen").clientHeight +"px";
-				this.target.style.top  = (pagey-icon.clientHeight/2)+"px";
+				this.target.style.left = (pagex-iconWidth/2)+ this.currentPageIndex*document.getElementById("appScreen").clientHeight +"px";
+				this.target.style.top  = (pagey-iconHeight/2)+"px";
 			}
 			row = row||1;
 			row += this.currentPageIndex*this.appsPerColumn;
-			this.to = (row-1)*4+column;	
+			this.to = (row-1)*4+column;
 			this.highlight(iconWidth);
 		},
 		dragEnd: function(e){
@@ -583,25 +597,28 @@
 			this.highlight(false);		
 			var tmpNode = this.target.cloneNode(true);
 			tmpNode.onclick = this.target.onclick;
-			var from = +this.target.getAttribute("elPos");
+			for(var j=0; j<this.queue.length; j++){
+				if(this.queue[j]&&(this.queue[j].id === this.target.id || this.queue[j].id === this.target.getAttribute("iWidget")))
+					var from = j+1;
+			}
 			if(typeof(this.to)=="number"){
 				var des = this.to-1;				
 				if(this.pageIndexMem == this.currentPageIndex){
 					if(this.isVertical){
 						this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 						this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-						this.target.setAttribute("elPos", this.to);
-						this.queue[des].style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
-						this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-						this.queue[des].setAttribute("elPos", from);
+						if(this.queue[des]){
+							this.queue[des].style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
+							this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";							
+						}
 					}
 					else{
 						this.target.style.left = (des%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
 						this.target.style.top = Math.floor(des/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
-						this.target.setAttribute("elPos", this.to);
-						this.queue[des].style.left = ((from-1)%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
-						this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
-						this.queue[des].setAttribute("elPos", from);
+						if(this.queue[des]){
+							this.queue[des].style.left = ((from-1)%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+							this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+						}
 					}
 					this.switchQueue(from, this.to);
 				}else{
@@ -611,7 +628,6 @@
 					}else{
 						this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 						this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-						this.target.setAttribute("elPos", this.to);
 						this.moveQueue(from, this.to);
 					}
 				}
@@ -625,16 +641,15 @@
 		},
 		switchQueue: function(from, to){			
 			var tmp = this.queue[to-1];
-			this.queue[to-1] = this.queue[from-1];
-			this.queue[from-1] = tmp;
+			this.queue[to-1] = this.queue[from-1];			
+			this.queue[from-1] = tmp;	
 		},
 		moveQueue: function(from, to){
-			var tmp = this.queue[from-1];
-			this.queue[to-1] = tmp;
-			this.queue[from-1] = undefined;
+			this.queue[to-1] = this.queue[from-1];
+			this.queue[from-1] = undefined;			
 		},
 		highlight: function(sideLen){
-			if(sideLen === false){
+			if(sideLen === false && this.highlightBox){
 				this.highlightBox.style.display = "none";
 				return "closed";
 			}
@@ -668,6 +683,19 @@
 					}
 				}
 			}
+		},
+		caculate: function(){
+			if(this.iconWidth&&this.iconHeight){
+				return false;
+			}
+			var icons = document.getElementsByClassName("icon");
+			var i = 0;
+			while((!icons[i].clientWidth) && (!icons[i].clientHeight)){
+				i++;
+			}
+			this.iconWidth = icons[i].clientWidth;
+			this.iconHeight = icons[i].clientHeight;
+			return true;
 		}
 	});
 	base.fn.extend({
@@ -722,24 +750,81 @@
 			}
 		},
 		//add some listeners on the widget.
-		initWidget: function(i,obj){
+		initWidget: function(key,obj){
 			if(typeof obj.open.node == "string"){
-				this.widgets[i].open.node = document.getElementById(obj.open.node);
+				this.widgets[key].open.node = document.getElementById(obj.open.node);
 			}else if(typeof obj.open.node == "object" && obj.open.node.nodeType == 1){
-				this.widgets[i].open.node = obj.open.node;
+				this.widgets[key].open.node = obj.open.node;
 			}
 			if(typeof obj.close.node == "string"){
-				this.widgets[i].close.node = document.getElementById(obj.close.node);
+				this.widgets[key].close.node = document.getElementById(obj.close.node);
 			}else if(typeof obj.close.node == "object" && obj.close.node.nodeType == 1){
-				this.widgets[i].close.node = obj.close.node;
-			}
-			this.widgets[i].open.node.addEventListener("dbclick", obj.open.func, false);
-			this.widgets[i].close.node.addEventListener("dbclick", obj.close.func, false);
+				this.widgets[key].close.node = obj.close.node;
+			}	
+			var openNode = this.widgets[key].open.node;
+			var closeNode = this.widgets[key].close.node;			
+			var that = this;
+			//Hide the app icon, after open its widget
+			openNode.addEventListener("dbclick", function(e){
+				for(var j=0; j<that.queue.length; j++){
+					if(that.queue[j] && that.queue[j].id === key){
+						that.elPos = j+1;
+					}
+				}
+				try{
+					obj.open.func(e);
+				}
+				catch(error){
+					console.log(error);
+				}
+			},false);
+			//show the app icon, when its widget has gone.
+			closeNode.addEventListener("dbclick", function(e){
+				openNode.style.top = that.widgets[key].widget.style.top;
+				openNode.style.left = that.widgets[key].widget.style.left;
+				try{
+					obj.close.func(e);
+				}
+				catch(error){
+					console.log(error);
+				}
+			}, false);
 		},
 		locateWidget: function(wgt, top, left){
 			var widget = this.widgets[wgt].widget;
 			widget.style.left = left;
 			widget.style.top = top;
+		}
+	});
+	
+	base.fn.extend({
+		// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
+		debug: function(){
+			var str="";
+			for(var i=0; i<arguments.length; i++){
+				if(typeof arguments[i] == "object"){
+					for(var j in arguments[i]){
+						if(typeof arguments[i][j] == "object"){
+							str += " {";
+							str += j;
+							str += ":";
+							str += log(arguments[i][j]);
+							str += "}, ";
+						}
+						else{
+							str += " {";
+							str += j;
+							str += ":";
+							str += arguments[i][j];							
+							str += "}, ";
+						}
+					}
+				}else{
+					str += " ";
+					str += arguments[i];				
+				}
+			}
+			return str;
 		}
 	});
 	return base;
