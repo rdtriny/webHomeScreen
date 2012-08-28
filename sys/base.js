@@ -12,19 +12,19 @@
 			}
 		}
 		var that = this;
-		this.container.addEventListener("touchstart", function(e){
+		document.body.addEventListener("touchstart", function(e){
 			that.touchstart(e);
 		}, false);
-		this.container.addEventListener("touchmove", function(e){
+		document.body.addEventListener("touchmove", function(e){
 			that.touchmove(e);
 		}, false);
-		this.container.addEventListener("touchend", function(e){
+		document.body.addEventListener("touchend", function(e){
 			that.touchend(e);
 		}, false);
-		this.container.addEventListener("touchcancel", function(e){
+		document.body.addEventListener("touchcancel", function(e){
 			that.touchcancel(e);
 		}, false);
-		this.container.addEventListener("click", function(e){
+		document.body.addEventListener("click", function(e){
 			that.click(e);
 		}, false);
 		this.isWidgetShow = false;
@@ -349,7 +349,7 @@
 		yield: function(direction, blockNum){
 			var elPos = this.elPos;
 			elPos -= 1;
-			var icons = document.getElementsByClassName("icon");
+			var icons = this.queue;
 			var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
 			if(direction == "down"){
 				for(var i=1; i<blockNum; i++){
@@ -394,7 +394,7 @@
 		withdraw: function(direction, blockNum){
 			var elPos = this.elPos;
 			elPos -= 1;
-			var icons = document.getElementsByClassName("icon");			
+			var icons = this.queue;			
 			var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
 			if(direction == "up"){
 				for(var i=1; i<blockNum; i++){
@@ -450,19 +450,6 @@
 		}
 	}
 	base.fn.extend({
-		tray: null,
-		addFixedArea: function(){
-			var div = document.createElement("div");
-			div.style.width = "100%";
-			div.style.height = "16%";
-			div.style.position = "fixed";
-			div.style.bottom = "0";
-			div.style.backgroundColor = "#888888";
-			div.style.zIndex = "100";
-			div.id = "fixed";
-			this.tray = div;
-			document.body.appendChild(div);		
-		},
 		sideBar: function(isShow, pos){
 			if(pos){
 				if(this.isVertical){
@@ -507,8 +494,12 @@
 		dragStart: function(e){
 			var target = e.target;
 			this.pageIndexMem = this.currentPageIndex;
-			while(target.parentNode && target.parentNode.id!="iconsContainer"){
-				target = target.parentNode;
+			while(target.parentNode){
+				if(target.parentNode.id=="iconsContainer" || target.className == "icon"){					
+					break;
+				}else{
+					target = target.parentNode;
+				}
 			}
 			if(/[A-z0-9]+\./ig.test(target.id)){
 				target.style.webkitTransformOrigin="50% 50%";
@@ -522,6 +513,7 @@
 				this.isDragging = true;
 				this.target = target;
 			}
+			this.isActionOut(target);
 		},
 		dragMove: function(e){
 			if(!this.isDragging){
@@ -535,114 +527,138 @@
 			var iconHeight = this.iconHeight;
 			var iconWidth = this.iconWidth;
 			if(that.isVertical){			
-				if(pagey>iconHeight*3.9){
-					if(!this.timeout){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount){
-								that.slideToPage(that.currentPageIndex+1, 100);
-							}
-						}, 2000);
-					}
+				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){					
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex+1 < that.pagesCount){
+							that.slideToPage(that.currentPageIndex+1, 100);
+						}
+					}, 1000);
 				}else if(pagey<iconHeight*0.2){
-					if(!this.timeout){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0){
-								that.slideToPage(that.currentPageIndex-1, 100);
-							}
-						}, 2000);
-					}
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex-1 >= 0){
+							that.slideToPage(that.currentPageIndex-1, 100);
+						}
+					}, 1000);
+				}
+				else if(pagey>=iconHeight*4){
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						that.moveInTray();
+					}, 1000);
 				}
 				else{
 					clearTimeout(this.timeout);
-					this.timeout = false;
 				}
 			}else{
 				if(pagex>iconWidth*3.7){
-					if(!this.timeout){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex+1 < that.pagesCount){
-								that.slideToPage(that.currentPageIndex+1, 100);
-							}
-						}, 2000);
-					}
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex+1 < that.pagesCount){
+							that.slideToPage(that.currentPageIndex+1, 100);
+						}
+					}, 1000);
 				}else if(pagex<iconWidth/3){
-					if(!this.timeout){
-						this.timeout = setTimeout(function(){
-							if(that.currentPageIndex-1 >= 0){
-								that.slideToPage(that.currentPageIndex-1, 100);
-							}
-						}, 2000);
-					}
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex-1 >= 0){
+							that.slideToPage(that.currentPageIndex-1, 100);
+						}
+					}, 1000);
 				}else{
 					clearTimeout(this.timeout);
-					this.timeout = false;
 				}
 			}
 			var row = Math.round(pagey/iconHeight); //25% height
 			var column = Math.round(pagex/iconWidth+0.5); //25% width
 			if(this.isVertical){
-				this.target.style.left = (pagex-iconWidth/2)+ "px";
-				this.target.style.top  = (pagey-iconHeight/2)+this.currentPageIndex*document.getElementById("appScreen").clientHeight + "px";
+				if(this.actionOut){
+					this.target.style.left = (pagex-iconWidth/2) + "px";
+					this.target.style.top  = (pagey-iconHeight/2) - document.getElementById("appScreen").clientHeight+ "px";
+				}else{
+					this.target.style.left = (pagex-iconWidth/2)+ "px";
+					this.target.style.top  = (pagey-iconHeight/2)+this.currentPageIndex*document.getElementById("appScreen").clientHeight + "px";
+				}
 			}else{
 				this.target.style.left = (pagex-iconWidth/2)+ this.currentPageIndex*document.getElementById("appScreen").clientHeight +"px";
 				this.target.style.top  = (pagey-iconHeight/2)+"px";
 			}
 			row = row||1;
-			row += this.currentPageIndex*this.appsPerColumn;
-			this.to = (row-1)*4+column;
+			if(this.actionIn || row>4){
+				this.to = false;
+			}else{
+				row += this.currentPageIndex*this.appsPerColumn;
+				this.to = (row-1)*4+column;
+			}
 			this.highlight(iconWidth);
 		},
 		dragEnd: function(e){
+			clearTimeout(this.timeout);
 			if(!this.isDragging){
 				return ;
-			}
-			clearTimeout(this.timeout);
-			this.target.style.webkitAnimationName= "";
-			this.target.style.webkitAnimationIterationCount= "";
-			this.highlight(false);		
-			var tmpNode = this.target.cloneNode(true);
-			tmpNode.onclick = this.target.onclick;
+			}else {				
+				this.target.style.webkitAnimationName = "";
+				this.target.style.webkitAnimationIterationCount = "";		
+				this.highlight(false);
+			}			
 			for(var j=0; j<this.queue.length; j++){
 				if(this.queue[j]&&(this.queue[j].id === this.target.id || this.queue[j].id === this.target.getAttribute("iWidget")))
-					var from = j+1;
+					this.from = j+1;
 			}
-			if(typeof(this.to)=="number"){
-				var des = this.to-1;				
-				if(this.pageIndexMem == this.currentPageIndex){
-					if(this.isVertical){
-						this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-						this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-						if(this.queue[des]){
-							this.queue[des].style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
-							this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";							
+			if(this.actionIn){
+				this.endToIn();
+			}else if(this.actionOut){
+				if(!this.queue[this.to-1]){
+					this.moveOutTray();
+					this.endToOut(true);
+				}else{				
+					this.endToOut(false);
+				}
+			}
+			else{
+				var from = this.from;
+				if(typeof(this.to)=="number"){
+					var des = this.to-1;				
+					if(this.pageIndexMem == this.currentPageIndex){
+						if(this.isVertical){
+							this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+							this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+							if(this.queue[des]){
+								this.queue[des].style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
+								this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";							
+							}
 						}
-					}
-					else{
-						this.target.style.left = (des%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
-						this.target.style.top = Math.floor(des/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
-						if(this.queue[des]){
-							this.queue[des].style.left = ((from-1)%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
-							this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+						else{
+							this.target.style.left = (des%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+							this.target.style.top = Math.floor(des/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+							if(this.queue[des]){
+								this.queue[des].style.left = ((from-1)%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+								this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+							}
 						}
-					}
-					this.switchQueue(from, this.to);
-				}else{
-					if(this.queue[des]){
-						this.target.style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
-						this.target.style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						this.switchQueue(from, this.to);
 					}else{
-						this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-						this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-						this.moveQueue(from, this.to);
+						if(this.queue[des]){
+							this.target.style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
+							this.target.style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+						}else{
+							this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+							this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+							this.moveQueue(from, this.to);
+						}
 					}
-				}
-				if(this.target.getAttribute("isWidget")){
-					this.locateWidget(this.target.id, this.target.style.top, this.target.style.left)
+					if(this.target.getAttribute("isWidget")){
+						this.locateWidget(this.target.id, this.target.style.top, this.target.style.left)
+					}
+				}else{					
+					this.target.style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
+					this.target.style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 				}
 			}
-			this.isDragging = false;			
-			this.timeout = false;
+			this.isDragging = false;
 			this.to = false;
+			this.from = false;
 		},
 		switchQueue: function(from, to){			
 			var tmp = this.queue[to-1];
@@ -652,6 +668,9 @@
 		moveQueue: function(from, to){
 			this.queue[to-1] = this.queue[from-1];
 			this.queue[from-1] = undefined;			
+		},
+		delQueue: function(from){
+			this.queue[from-1] = undefined;
 		},
 		highlight: function(sideLen){
 			if(sideLen === false && this.highlightBox){
@@ -671,7 +690,7 @@
 			}else{
 				var des = this.to - 1;
 				this.highlightBox.style.display = "block";
-				if(this.pageIndexMem == this.currentPageIndex){
+				if(this.pageIndexMem == this.currentPageIndex && (!this.actionOut)){
 					this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 					this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
@@ -693,7 +712,7 @@
 			if(this.iconWidth&&this.iconHeight){
 				return false;
 			}
-			var icons = document.getElementsByClassName("icon");
+			var icons = this.container.getElementsByClassName("icon");
 			var i = 0;
 			while((!icons[i].clientWidth) && (!icons[i].clientHeight)){
 				i++;
@@ -718,6 +737,7 @@
 			}
 		}
 	});
+	//some apps get widgets, so this is the way manage them.
 	base.fn.extend({
 		widgets: {},
 		addWidget: function(widget, el){
@@ -801,7 +821,7 @@
 			widget.style.top = top;
 		}
 	});
-	
+	//add a API debug, for logging info
 	var debug = base.debug = base.fn.extend({
 		// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
 		debug: function(){
@@ -835,36 +855,84 @@
 	})[0];
 	
 	base.fn.extend({
-		moveToTray: function(){
-			var target = document.cloneNode(this.target);
-			if(this.checkFull())
-				this.tray.appendChild(target);
-			
-			this.arrange();
+		tray: null,
+		targetMem: null,
+		actionIn: false,
+		actionOut: false,
+		addFixedArea: function(){
+			var div = document.createElement("div");
+			div.style.width = "100%";
+			div.style.height = "16%";
+			div.style.position = "fixed";
+			div.style.bottom = "0";
+			div.style.left = "0";
+			div.style.backgroundColor = "black";
+			div.style.opacity = "0.6";
+			div.id = "tray";
+			this.tray = div;
+			document.body.appendChild(div);		
 		},
-		delOld: function(parent, son){
-			parent.removeChild(son);
+		moveInTray: function(){			
+			if(!this.checkFull()){
+				var target = this.target.cloneNode(true);
+				this.tray.appendChild(target);				
+				this.actionIn = true;			
+				this.targetMem = target;
+				this.arrange();
+			}
+		},
+		endToIn: function(){
+			this.delQueue(this.from);
+			this.container.removeChild(this.target);
+			this.target = this.targetMem;
+			this.actionIn = false;
 		},
 		checkFull: function(){
 			var icons = this.tray.getElementsByClassName("icon");
-			if(icons.length>5){
+			if(icons.length>4){
+				return true;
+			}else{
 				return false;
 			}
-			return true;
 		},
+		//refresh all apps in the tray.
 		arrange: function(){
 			var icons = this.tray.getElementsByClassName("icon");
 			for(var i=0; i<icons.length; i++){
-				icons[i].style.width = 100/icons.length + "%";
+				icons[i].style.webkitAnimation = "";
+				icons[i].style.top = "0";
 				icons[i].style.height = "100%";
+				icons[i].style.width = 100/icons.length + "%";
+				icons[i].style.left = 100/icons.length*i + "%";
 			}
 		},
 		moveOutTray: function(){
-			var target = document.cloneNode(this.target);
-			if(this.checkFull())
-				this.container.appendChild(target);
-			
+			var target = this.target.cloneNode(true);
+			this.container.appendChild(target);
+			this.targetMem = target;
+		},
+		//delete target from container and modify queue of the apps list.
+		endToOut: function(isSuccess){
+			if(typeof isSuccess == 'boolean' && isSuccess){
+				var des = this.to-1;
+				this.tray.removeChild(this.target);
+				this.target = this.targetMem;	
+				this.queue[des] = this.target;
+				this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+				this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+				this.target.style.height = 100/(this.pagesCount*this.appsPerColumn) + "%";
+				this.target.style.width = "25%";				
+			}
 			this.arrange();
+			this.actionOut = false;
+		},
+		isActionOut: function(target){
+			if(target.parentNode.id == "tray"){
+				this.actionOut = true;
+			}
+			else{
+				this.actionOut = false;
+			}
 		}
 	});
 	
