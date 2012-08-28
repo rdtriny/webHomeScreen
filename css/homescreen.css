@@ -6,7 +6,7 @@
 	height: 100%;
 	padding: 0;
 	margin: 0;
-	background: url("../images/cover.jpg") no-repeat top left;	
+	background: url("../images/cover.jpg") repeat top left;	
 	-webkit-transition-duration: .2s;
 }
 *{
@@ -43,16 +43,21 @@
 	position: absolute;
 	float: left;
 	padding: 0;
-	margin: 0;	
+	margin: 0;
+	overflow: hidden;
 	-webkit-transition-duration: 0.1s;	
 	transition-property: opacity;
 	-webkit-transition-timing-function: cubic-bezier(0.33,0.66,0.66,1);
 }
 .icon img {
-	width: 120%;
-	position: relative;
+	width: 96px;
+	height: 110px;
+	position: absolute;
 	display: block;
-	margin-left: -10%;
+	left: 50%;
+	margin-left: -48px;
+	top: 50%;
+	margin-top: -55px;
 }
 .icon span {
 	display: none;
