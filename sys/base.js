@@ -1,34 +1,62 @@
-﻿var Base = (function(window, undefined){
-	var base = function(container, config){
-		if(typeof container == "string"){
-			this.container = document.getElementById(container);
-		}
-		else if(typeof container == "object" && container.nodeType == 1){
-			this.container = container;
-		}
-		if(config && typeof config == "object"){
-			for(var i in config){
-				this[i] = config[i];
+﻿var _Base_ = (function(window, undefined){
+	/*
+		make the following three api can't be access out of the scope.
+	*/	
+	var getAppsList = function(){
+		// Don't use JSON.parse, 'cause chinese characters without slashes cause errors.
+		return eval(window.nativeapps.getAppsListInJson());
+	};
+	var getDefaultIconUri = function(){
+		return window.nativeapps.getDefaultAppIconUri();
+	};
+	//identification is like this: com.orange.browser/com.a.b
+	var launchApp = function(identification){	
+		var pkg = identification.split('/')[0];
+		var cls = identification.split('/')[1];
+		window.nativeapps.launchActivity(pkg, cls);
+	};
+	var removeAllChild = function(node){
+		if(typeof node == "object" && node.nodeType == 1){
+			while(node.firstChild){
+				node.removeChild(node.firstChild);
 			}
 		}
-		var that = this;
-		document.body.addEventListener("touchstart", function(e){
-			that.touchstart(e);
+	};
+	
+	var base = function(container, config){		
+		var that = this;		
+		window.addEventListener('load',function(){
+			if(typeof container == "string"){
+				that.container = document.getElementById(container);
+			}
+			else if(typeof container == "object" && container.nodeType == 1){
+				that.container = container;
+			}
+			if(config && typeof config == "object"){
+				for(var i in config){
+					that[i] = config[i];
+				}
+			}
+			document.body.addEventListener("touchstart", function(e){
+				that.touchstart(e);
+			}, false);
+			document.body.addEventListener("touchmove", function(e){
+				that.touchmove(e);
+			}, false);
+			document.body.addEventListener("touchend", function(e){
+				that.touchend(e);
+			}, false);
+			document.body.addEventListener("touchcancel", function(e){
+				that.touchcancel(e);
+			}, false);
+			document.body.addEventListener("click", function(e){
+				that.click(e);
+			}, false);
+			that.isWidgetShow = false;
+			that.addFixedArea();
+			that.loadAudio("./mp3.mp3");
+			that.run();
 		}, false);
-		document.body.addEventListener("touchmove", function(e){
-			that.touchmove(e);
-		}, false);
-		document.body.addEventListener("touchend", function(e){
-			that.touchend(e);
-		}, false);
-		document.body.addEventListener("touchcancel", function(e){
-			that.touchcancel(e);
-		}, false);
-		document.body.addEventListener("click", function(e){
-			that.click(e);
-		}, false);
-		this.isWidgetShow = false;
-		this.addFixedArea();
 	};
 	base.prototype = {
 		appStyle: null,
@@ -61,6 +89,56 @@
 		queue: [],
 		iconWidth: 0,
 		iconHeight: 0,
+		run: function(){
+			// keep trying to get all resources until success.			
+			var that = this;
+			var index = setInterval(function(){
+				var apps = that.loadRes();			
+				that.init();
+				if(apps[len-1].iconUri && apps[len-1].label){
+					clearInterval(index);
+				}
+			}, 1000);						
+		},
+		loadRes: function(){
+			this.queue = [];
+			this.appsCount = 0;
+			this.pagesCount = 0;
+			this.container.innerHTML = "";	 	//removeAllChild(this.container); //both methods are ok.
+			var apps, defaultUri = getDefaultIconUri();
+			apps = getAppsList();
+			var len = apps.length;
+			var icon, label;
+			for (var i = 0; i < apps.length; i++){
+				var icon = defaultUri;
+				if (apps[i].iconUri != null) {
+					//icon = "file:///" + apps[i].iconUri;
+					icon = apps[i].iconUri;
+				}
+				label = apps[i].label || "LOADING";
+				this.register({title:label,packageName:apps[i].appClass+"/"+apps[i].appPackage,imgSrc:icon,widget:""});				
+			}
+			return apps;
+		},
+		init: function(){
+			var appNode = false;
+			this.pagesCount = Math.ceil(this.appsCount/(this.appsPerRow*this.appsPerColumn));
+			for(var i=0; i<this.appsCount; i++){
+				appNode = this.queue[i];
+				this.display(appNode);
+			}
+			this.styleApp();
+		},
+		//register application to the system.
+		register: function(app){
+			this.appsCount ++;
+			var appNode = this.createAppNode(app);
+			if(app.widget){
+				this.addWidget(app.widget ,appNode);
+				appNode.setAttribute("isWidget", "true");
+			}
+			this.queue.push(appNode);
+		},	
 		touchstart: function(e){					
 			this.sideBar(true);
 			this.pinchEndLen = 0;
@@ -222,6 +300,7 @@
 			this.touchend(e);
 		},
 		click: function(e){
+			var that = this;
 			var now = new Date;			
 			var target = e.target;
 			if(now - this.lastClickTime<400){
@@ -235,9 +314,9 @@
 						target = target.parentNode;
 					}
 					
-					if(/[A-z0-9]+\./ig.test(target.id)){				
-						console.log(target.id);
-						//location.href = target.id;
+					if(/[A-z0-9]+\./ig.test(target.id)){						
+						that.playAudio(0);
+						launchApp(target.id);
 					}
 				}, 400);
 			}
@@ -262,27 +341,8 @@
 				appNode.appendChild(span);				
 			}
 			return appNode;
-		},
-		//register application to the system.
-		register: function(app){
-			this.appsCount ++;
-			var appNode = this.createAppNode(app);
-			if(app.widget){
-				this.addWidget(app.widget ,appNode);
-				appNode.setAttribute("isWidget", "true");
-			}
-			this.queue.push(appNode);
-		},
-		init: function(){
-			var appNode = false;
-			this.pagesCount = Math.ceil(this.appsCount/(this.appsPerRow*this.appsPerColumn));
-			for(var i=0; i<this.appsCount; i++){
-				appNode = this.queue[i];
-				this.display(appNode);
-			}
-			this.styleApp();
-		},
-		//switch the pages left or right.
+		},			
+		//switch the pages left/right or up/down.
 		slideToPage: function(pageIndex, time){
 			var pageWidth = document.getElementById("appScreen").clientWidth;
 			var pageHeight = document.getElementById("appScreen").clientHeight;
@@ -777,17 +837,20 @@
 		//add some listeners on the widget.
 		initWidget: function(key,obj){
 			if(typeof obj.open.node == "string"){
-				this.widgets[key].open.node = document.getElementById(obj.open.node);
-			}else if(typeof obj.open.node == "object" && obj.open.node.nodeType == 1){
 				this.widgets[key].open.node = obj.open.node;
+				var openNode = document.getElementById(obj.open.node);
+			}else if(typeof obj.open.node == "object" && obj.open.node.nodeType == 1){
+				this.widgets[key].open.node = obj.open.node.id;
+				openNode = obj.open.node;
 			}
 			if(typeof obj.close.node == "string"){
-				this.widgets[key].close.node = document.getElementById(obj.close.node);
-			}else if(typeof obj.close.node == "object" && obj.close.node.nodeType == 1){
 				this.widgets[key].close.node = obj.close.node;
-			}	
-			var openNode = this.widgets[key].open.node;
-			var closeNode = this.widgets[key].close.node;			
+				var closeNode = document.getElementById(obj.close.node);
+				
+			}else if(typeof obj.close.node == "object" && obj.close.node.nodeType == 1){
+				this.widgets[key].close.node = obj.close.node.id;
+				var closeNode = obj.close.node;
+			}			
 			var that = this;
 			//Hide the app icon, after open its widget
 			openNode.addEventListener("dbclick", function(e){
@@ -840,7 +903,7 @@
 							str += " {";
 							str += j;
 							str += ":";
-							str += arguments[i][j];							
+							str += arguments[i][j];	
 							str += "}, ";
 						}
 					}
@@ -868,6 +931,7 @@
 			div.style.left = "0";
 			div.style.backgroundColor = "black";
 			div.style.opacity = "0.6";
+			div.style.borderTop = "1px solid #F0FFF0"
 			div.id = "tray";
 			this.tray = div;
 			document.body.appendChild(div);		
@@ -925,6 +989,7 @@
 			}
 			this.arrange();
 			this.actionOut = false;
+			this.restoreEvent();
 		},
 		isActionOut: function(target){
 			if(target.parentNode.id == "tray"){
@@ -933,9 +998,61 @@
 			else{
 				this.actionOut = false;
 			}
+		},
+		restoreEvent: function(){
+			var widget = this.widgets[this.target.id];
+			if(widget){
+				document.getElementById(widget.open.node).addEventListener("dbclick", widget.open.func, false);
+				document.getElementById(widget.close.node).addEventListener("dbclick", widget.close.func, false);
+				widget.widget.style.top = this.target.style.top;
+				widget.widget.style.left = this.target.style.left;
+			}
 		}
 	});
 	
+	//some sound effect
+	base.fn.extend({
+		audio: [],
+		loadAudio: function(src){
+			var audio = new Audio(src);
+			audio.preload = "auto";
+			this.audio.push(audio);
+		},
+		playAudio: function(index){
+			this.audio[index].play();
+		},
+		pauseAudio: function(index){
+			this.audio[index].pause();
+		},
+		volumeup: function(index){
+			this.audio[index].volume += 0.1;
+		},
+		volumedown: function(index){
+			this.audio[index].volume -= 0.1;
+		}		
+	});
+	
+	base.fn.extend({
+		ajax:function(method, url, isAsy){
+			var xmlhttp = new XMLHttpRequest();
+			xmlhttp.onreadystatechange = function(){
+				if(xmlhttp.status == 200){
+					if(xmlhttp.responseXML){
+						
+					}else if(xmlhttp.responseText){
+						
+					}
+				}
+			};
+		},
+		responseStr: function(str){
+			console.log(str);
+		},
+		responseXML: function(xml){
+			console.log(xml.getElementsByTagName('*')[0].nodeValue);
+		}
+	});
+
 	return base;
 })(window);
 
@@ -1043,32 +1160,7 @@ var spriteMovie = (function(){
 	return spriteMovie;
 })();
 
-
-//for test.
-setTimeout(function(){
-window.system = new Base("iconsContainer",{isVertical:true});
-system.register({title:"weather",packageName:"com.orange.weather",imgSrc:"./images/weather.png",widget:"./widget/weather.js"})
-system.register({title:"music",packageName:"com.orange.music",imgSrc:"./images/music.png",widget:""})
-system.register({title:"facebook",packageName:"com.orange.facebook",imgSrc:"./images/facebook.png",widget:""})
-system.register({title:"movie",packageName:"com.orange.movie",imgSrc:"./images/movie.png",widget:""})
-system.register({title:"twitter",packageName:"com.orange.twitter",imgSrc:"./images/twitter.png",widget:""})
-system.register({title:"rss",packageName:"com.orange.rss",imgSrc:"./images/rss.png",widget:""})
-system.register({title:"alarm",packageName:"com.orange.alarm",imgSrc:"./images/alarm.png",widget:""})
-system.register({title:"tv",packageName:"com.orange.tv",imgSrc:"./images/tv.png",widget:""})
-system.register({title:"message",packageName:"com.orange.message",imgSrc:"./images/message.png",widget:""})
-system.register({title:"browser",packageName:"com.orange.browser",imgSrc:"./images/browser.png",widget:""})
-system.register({title:"caculator",packageName:"com.orange.caculator",imgSrc:"./images/calculator.png",widget:""})
-system.register({title:"calendar",packageName:"com.orange.calendar",imgSrc:"./images/calendar.png",widget:""})
-system.register({title:"camera",packageName:"com.orange.camera",imgSrc:"./images/camera.png",widget:""})
-system.register({title:"chat",packageName:"com.orange.chat",imgSrc:"./images/chat.png",widget:""})
-system.register({title:"clock",packageName:"com.orange.clock",imgSrc:"./images/clock.png",widget:""})
-system.register({title:"game",packageName:"com.orange.game",imgSrc:"./images/game.png",widget:""})
-system.register({title:"phone",packageName:"com.orange.phone",imgSrc:"./images/phone.png",widget:""})
-system.register({title:"picture",packageName:"com.orange.picture",imgSrc:"./images/picture.png",widget:""})
-system.register({title:"recorder",packageName:"com.orange.recorder",imgSrc:"./images/recorder.png",widget:""})
-system.register({title:"store",packageName:"com.orange.store",imgSrc:"./images/store.png",widget:""})
-system.init();
-}, 2000);
+var system = new _Base_("iconsContainer",{isVertical:true, appsPerRow:4, appsPerColumn:4});
 
 window.addEventListener("gestureend", function(){
 	console.log("getsteure");
