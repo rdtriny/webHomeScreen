@@ -50,19 +50,23 @@
 	-webkit-transition-timing-function: cubic-bezier(0.33,0.66,0.66,1);
 }
 .icon img {
-	width: 96px;
-	height: 110px;
+	width: 48px;
+	height: 48px;
 	position: absolute;
 	display: block;
 	left: 50%;
-	margin-left: -48px;
-	top: 50%;
-	margin-top: -55px;
+	margin-left: -24px;
+	top: 45%;
+	margin-top: -24px;
 }
 .icon span {
-	display: none;
-	text-align: middle;
 	color: white;
+	position: relative;
+	font-size: 0.8em;
+	text-align: center;
+	top: 70%;
+	line-height: 100%;
+	display: inline-block;
 }
 @-webkit-keyframes shake{
 	from{
