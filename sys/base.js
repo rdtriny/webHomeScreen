@@ -13,6 +13,7 @@
 	var launchApp = function(identification){	
 		var pkg = identification.split('/')[0];
 		var cls = identification.split('/')[1];
+		console.log(pkg+"   "+cls);
 		window.nativeapps.launchActivity(pkg, cls);
 	};
 	var removeAllChild = function(node){
@@ -93,10 +94,13 @@
 			// keep trying to get all resources until success.			
 			var that = this;
 			var index = setInterval(function(){
-				var apps = that.loadRes();			
+				console.log("hello world");
+				var apps = that.loadRes();
+				var len = apps.length;
 				that.init();
 				if(apps[len-1].iconUri && apps[len-1].label){
 					clearInterval(index);
+					console.log("canceled");
 				}
 			}, 1000);						
 		},
@@ -112,11 +116,10 @@
 			for (var i = 0; i < apps.length; i++){
 				var icon = defaultUri;
 				if (apps[i].iconUri != null) {
-					//icon = "file:///" + apps[i].iconUri;
 					icon = apps[i].iconUri;
 				}
 				label = apps[i].label || "LOADING";
-				this.register({title:label,packageName:apps[i].appClass+"/"+apps[i].appPackage,imgSrc:icon,widget:""});				
+				this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});				
 			}
 			return apps;
 		},
@@ -312,11 +315,10 @@
 				this.clickIndex = setTimeout(function(){
 					while(!target.id && target.id!="iconsContainer"){
 						target = target.parentNode;
-					}
-					
+					}				
 					if(/[A-z0-9]+\./ig.test(target.id)){						
-						that.playAudio(0);
 						launchApp(target.id);
+						that.playAudio(0);
 					}
 				}, 400);
 			}
@@ -816,6 +818,7 @@
 			}
 			return false;
 		},
+		//remember the configuration of all the widgets.
 		logWidget: function(wgt){
 			for(var i in wgt){
 				this.widgets[i] = wgt[i];
@@ -878,6 +881,7 @@
 				}
 			}, false);
 		},
+		//find the widget location, where it should be displayed.
 		locateWidget: function(wgt, top, left){
 			var widget = this.widgets[wgt].widget;
 			widget.style.left = left;
