@@ -94,13 +94,11 @@
 			// keep trying to get all resources until success.			
 			var that = this;
 			var index = setInterval(function(){
-				console.log("hello world");
 				var apps = that.loadRes();
 				var len = apps.length;
 				that.init();
 				if(apps[len-1].iconUri && apps[len-1].label){
 					clearInterval(index);
-					console.log("canceled");
 				}
 			}, 1000);						
 		},
