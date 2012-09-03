@@ -1031,28 +1031,111 @@
 			this.audio[index].volume -= 0.1;
 		}		
 	});
-	
+	//ajax module
 	base.fn.extend({
-		ajax:function(method, url, isAsy){
+		ajax:function(url, callback){
 			var xmlhttp = new XMLHttpRequest();
+			var that = this;
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
-					if(xmlhttp.responseXML){
-						
-					}else if(xmlhttp.responseText){
-						
+					try{
+						if(xmlhttp.responseXML){
+							that.getResponseXML(xmlhttp.responseXML);
+							if(typeof callback == 'function')
+								callback(xmlhttp.responseXML);
+						}else if(xmlhttp.responseText){
+							that.getResponseStr(xmlhttp.responseText);
+							if(typeof callback == 'function')
+								callback(xmlhttp.responseText);
+						}
+						else{
+							throw "The server response with no valuable entity.";
+						}
+					}
+					catch(message){
+						debug(message);
 					}
 				}
 			};
+			xmlhttp.open('GET', url, true);
+			xmlhttp.send();
 		},
-		responseStr: function(str){
+		getResponseStr: function(str){			
 			console.log(str);
 		},
-		responseXML: function(xml){
+		getResponseXML: function(xml){
 			console.log(xml.getElementsByTagName('*')[0].nodeValue);
+		},
+		//the arguments list are lined by their improtance level.
+		get: function(url, callback, isAsy){
+			var xmlhttp = new XMLHttpRequest(), bool;
+			var that = this;
+			if(typeof isAsy == "boolean")
+				bool = isAsy;
+			else
+				bool = true;
+			xmlhttp.onreadystatechange = function(){
+				if(xmlhttp.status == 200){
+					try{
+						if(xmlhttp.responseXML){
+							that.getResponseXML(xmlhttp.responseXML);
+							if(typeof callback == 'function')
+								callback(xmlhttp.responseXML);
+						}else if(xmlhttp.responseText){
+							that.getResponseStr(xmlhttp.responseText);
+							if(typeof callback == 'function')
+								callback(xmlhttp.responseText);
+						}
+						else{
+							throw "The server response with no valuable entity.";
+						}
+					}
+					catch(message){
+						debug(message);
+					}
+				}
+			}
+			xmlhttp.open('GET', url, bool);
+			xmlhttp.send();
+		},
+		post: function(url, callback, queryStr, isAsy){
+			var xmlhttp = new XMLHttpRequest(), bool;
+			if(typeof isAsy == "boolean")
+				bool = isAsy;
+			else
+				bool = true;
+			var data = "";
+			if(typeof queryStr == "object")
+				data = JSON.stringify(queryStr);
+			else if(typeof queryStr == "string")
+				data = queryStr;
+			
+			xmlhttp.onreadystatechange = function(){
+				if(xmlhttp.status == 200){
+					try{
+						if(xmlhttp.responseXML){
+							that.getResponseXML(xmlhttp.responseXML);
+							if(typeof callback == 'function')
+								callback(xmlhttp.responseXML);
+						}else if(xmlhttp.responseText){
+							that.getResponseStr(xmlhttp.responseText);
+							if(typeof callback == 'function')
+								callback(xmlhttp.responseText);
+						}
+						else{
+							throw "The server response with no valuable entity.";
+						}
+					}
+					catch(message){
+						debug(message);
+					}
+				}
+			};
+			xmlhttp.open('POST', url, bool);
+			xmlhttp.send(data);
 		}
 	});
-
+	
 	return base;
 })(window);
 
