@@ -549,6 +549,7 @@
 		}
 	});
 	
+	//action definition when drag event fires.
 	base.fn.extend({
 		highlightBox: null,
 		dragStart: function(e){
@@ -720,6 +721,7 @@
 			this.to = false;
 			this.from = false;
 		},
+		//the following three functions work for managing the queue of all apps.
 		switchQueue: function(from, to){			
 			var tmp = this.queue[to-1];
 			this.queue[to-1] = this.queue[from-1];			
@@ -732,6 +734,7 @@
 		delQueue: function(from){
 			this.queue[from-1] = undefined;
 		},
+		//show whether the app can be dragged to the target location. red for no, green for yes.
 		highlight: function(sideLen){
 			if(sideLen === false && this.highlightBox){
 				this.highlightBox.style.display = "none";
@@ -768,6 +771,7 @@
 				}
 			}
 		},
+		//find the app area's height and width
 		caculate: function(){
 			if(this.iconWidth&&this.iconHeight){
 				return false;
@@ -782,6 +786,8 @@
 			return true;
 		}
 	});
+	
+	//add an public API, which can be used as addEventListener.
 	base.fn.extend({
 		listen: function(node, event, func, bool){
 			try{
@@ -919,6 +925,7 @@
 		}
 	})[0];
 	
+	//logic about the favorite tray. 
 	base.fn.extend({
 		tray: null,
 		targetMem: null,
