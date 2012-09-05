@@ -88,7 +88,7 @@
 		appsPerColumn: 4,
 		appsCount: 0,
 		pagesCount: 0,
-		currentPageIndex: 0,
+		currentRowIndex: 0,
 		// distance from touch start to touch end
 		movedDistance: 0,
 		// distance to the top border of iconContainer div.
@@ -255,6 +255,8 @@
 		touchstart: function(e){
 			// display the sidebar.
 			this.sideBar(true);
+			// calculate the app's height and width, once for all.
+			this.calculate();
 			this.pinchEndLen = 0;
 			this.longtapStart = false;
 			if(e.touches.length === 1){
@@ -334,10 +336,14 @@
 			if(this.stopTouchEnd){
 				this.stopTouchEnd = false;
 				return ;
-			}			
+			}
 			if(!this.longtapStart){
 				clearTimeout(this.longTapIndex);
-				// when touchmove fires, swipe event will bubble up.
+				var w = this.endX-this.nextToEndX;
+				var h = this.endY-this.nextToEndY;
+				var time = (new Date - this.lastMoveTime);
+				var lastMoveSpeed = Math.sqrt(w*w + h*h)/time;				
+				// when your finger has moved on the screen, swipe event will bubble up.
 				if(this.endX){
 					if(Math.abs(this.endX-this.startX) > Math.abs(this.endY-this.startY)){
 						if(this.endX > this.startX){
@@ -351,8 +357,7 @@
 						}else{
 							direction = "up";
 						}
-					}
-					var lastMoveSpeed = Math.sqrt((this.endX-this.nextToEndX)*(this.endX-this.nextToEndX)+(this.endY-this.nextToEndY)*(this.endY-this.nextToEndY))/(new Date - this.lastMoveTime);
+					}					
 					var swipe = document.createEvent("Events");
 					swipe.initEvent("swipe", true, true);
 					swipe.data = {};
@@ -361,54 +366,42 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-			}				
+			}
 			if(this.isVertical){
-				var pageHeight = document.getElementById("appScreen").clientHeight;
-				var percent = this.movedDistance / pageHeight;
-				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.3)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.3)){
-					if(percent>0 && this.currentPageIndex>0){
-						this.currentPageIndex -= 1;						
-						var y = this.currentPageIndex*pageHeight;
+				var percent = this.movedDistance / (this.iconHeight*this.appsPerColumn);				
+				// max height to iconContainer's top border
+				var max = (this.pagesCount-1)*this.appsPerColumn;
+				// swipe in high speed, slide to next page.
+				if(lastMoveSpeed>0.3){
+					if(percent>0){
+						this.currentRowIndex -= this.appsPerColumn;
+						// make sure rowindex > 0
+						this.currentRowIndex = this.currentRowIndex>0 ? this.currentRowIndex : 0;
 					}
-					else if(percent<0 && this.currentPageIndex<this.pagesCount-1){						
-						this.currentPageIndex += 1;
-						y = this.currentPageIndex*pageHeight;
+					else if(percent<0){
+						this.currentRowIndex += this.appsPerColumn;
+						// make sure rowindex < totalnum
+						this.currentRowIndex = this.currentRowIndex < max ? this.currentRowIndex : max;
 					}
-					else {
-						y = this.currentPageIndex*pageHeight;
-					}
+				// low speed slide row to row.
+				}else{
+					var movedRow = Math.round(percent*this.appsPerColumn);
+					// note that movedRow is negative when slide up, positive when slide down.
+					this.currentRowIndex -= movedRow;
+					// make sure rowindex > 0 && rowIndex < max
+					if(this.currentRowIndex < 0)
+						this.currentRowIndex  = 0;
+					else if(this.currentRowIndex>max)
+						this.currentRowIndex = max;					
+					
 				}
-				else{
-					y = this.currentPageIndex*pageHeight;
-				}			
+				var y = this.currentRowIndex*this.iconHeight;
 				this.moveStartY = y;
 				var des = {x:0, y:y};
 			}
-			else{
-				var pageWidth = document.getElementById("appScreen").clientWidth;
-				percent = this.movedDistance / pageWidth;				
-				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.3)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.3)){
-					if(percent>0 && this.currentPageIndex>0){
-						var x = (this.currentPageIndex-1)*pageWidth*-1;
-						this.currentPageIndex -= 1;
-					}
-					else if(percent<0 && this.currentPageIndex<this.pagesCount-1){
-						x = (this.currentPageIndex+1)*pageWidth*-1;
-						this.currentPageIndex += 1;
-					}
-					else {
-						x = this.currentPageIndex*pageWidth*-1;
-					}
-				}
-				else {
-					x = this.currentPageIndex*pageWidth*-1;
-				}			
-				this.moveStartX = x;
-				des = {x:x, y:0};
-			}
 			moveSidebar(this.sidebar, des);
 			this.css3move(this.container, des, 100);
-			moveBG(this.isBGMovable, des);			
+			moveBG(this.isBGMovable, des);
 			this.sideBar(false);
 		},
 		// sometimes touchcancel when you move out of the screen.
@@ -438,23 +431,25 @@
 			}
 			this.lastClickTime = now;			
 		},				
-		//switch the pages left/right or up/down.
-		slideToPage: function(pageIndex, time){
-			var pageWidth = document.getElementById("appScreen").clientWidth;
-			var pageHeight = document.getElementById("appScreen").clientHeight;
+		//switch the pages up/down.
+		slideToPage: function(inc, time){
+			var rows = inc*this.appsPerColumn;			
+			this.currentRowIndex += rows;
+			// the total num of rows
+			var max = (this.pagesCount-1)*this.appsPerColumn;
+			// make sure rowindex < totalnum and rowindex >0
+			if(this.currentRowIndex < 0)
+				this.currentRowIndex  = 0;
+			else if(this.currentRowIndex>max)
+				this.currentRowIndex = max;
+				
 			if(this.isVertical){
-				var y = pageIndex*pageHeight;
+				var y = this.currentRowIndex*this.iconHeight;
 				this.css3move(this.container, {x:0, y:y}, time);
 				this.moveStartY = y;
 			}
-			else{
-				var x = pageIndex*pageWidth*-1;
-				this.css3move(this.container, {x:x, y:0}, time);
-				this.moveStartX = x;
-			}
-			moveBG(this.isBGMovable, {x:x,y:y});
+			moveBG(this.isBGMovable, {x:0,y:y});
 			this.stopTouchEnd = true;
-			this.currentPageIndex = pageIndex;
 		},
 		css3move: function(el, distance, time){
 			time = time || 0;
@@ -600,7 +595,7 @@
 		highlightBox: null,
 		dragStart: function(e){
 			var target = e.target;
-			this.pageIndexMem = this.currentPageIndex;
+			this.rowIndexMem = this.currentRowIndex;
 			
 			// find the node of application or widget
 			while(target.parentNode){
@@ -635,9 +630,7 @@
 			}				
 			var that = this;
 			var pagex = e.touches[0].pageX;
-			var pagey = e.touches[0].pageY;
-			// calculate the app's height and width, once for all.
-			this.calculate();
+			var pagey = e.touches[0].pageY;			
 			var iconHeight = this.iconHeight;
 			var iconWidth = this.iconWidth;			
 			// calculate the row and column of position where you moved to.
@@ -647,20 +640,20 @@
 				// differnet coordinate system, iconContainer and tray. so use two method.
 				if(this.actionOut){
 					this.target.style.left = (pagex-iconWidth/2) + "px";
-					this.target.style.top  = (pagey-iconHeight/2) - document.getElementById("appScreen").clientHeight+ "px";
+					this.target.style.top  = (pagey-iconHeight/2) - iconHeight*this.appsPerColumn+ "px";
 				}else{
 					this.target.style.left = (pagex-iconWidth/2)+ "px";
-					this.target.style.top  = (pagey-iconHeight/2)+this.currentPageIndex*document.getElementById("appScreen").clientHeight + "px";
+					this.target.style.top  = (pagey-iconHeight/2)+this.currentRowIndex*iconHeight + "px";
 				}
 			}else{
-				this.target.style.left = (pagex-iconWidth/2)+ this.currentPageIndex*document.getElementById("appScreen").clientHeight +"px";
+				this.target.style.left = (pagex-iconWidth/2)+ this.currentRowIndex*iconHeight +"px";
 				this.target.style.top  = (pagey-iconHeight/2)+"px";
 			}
 			row = row||1;
 			if(this.actionIn || row>4){
 				this.to = false;
 			}else{
-				row += this.currentPageIndex*this.appsPerColumn;
+				row += this.currentRowIndex;
 				this.to = (row-1)*4+column;
 			}
 			// a green box indicates ok, a red box indicates you can't put application there.
@@ -668,18 +661,18 @@
 			
 			if(that.isVertical){
 				// decide if user wants to drag to next page or not.
-				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){					
+				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){
 					clearTimeout(this.timeout);
 					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex+1 < that.pagesCount){
-							that.slideToPage(that.currentPageIndex+1, 100);
+						if(that.currentRowIndex+1 < that.pagesCount*that.appsPerColumn){
+							that.slideToPage(1, 100);
 						}
 					}, 1000);
 				}else if(pagey<iconHeight*0.2){
 					clearTimeout(this.timeout);
 					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex-1 >= 0){
-							that.slideToPage(that.currentPageIndex-1, 100);
+						if(that.currentRowIndex > 0){
+							that.slideToPage(-1, 100);
 						}
 					}, 1000);
 				}
@@ -693,24 +686,6 @@
 					}
 				}
 				else{
-					clearTimeout(this.timeout);
-				}
-			}else{
-				if(pagex>iconWidth*3.7){
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex+1 < that.pagesCount){
-							that.slideToPage(that.currentPageIndex+1, 100);
-						}
-					}, 1000);
-				}else if(pagex<iconWidth/3){
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex-1 >= 0){
-							that.slideToPage(that.currentPageIndex-1, 100);
-						}
-					}, 1000);
-				}else{
 					clearTimeout(this.timeout);
 				}
 			}
@@ -743,7 +718,7 @@
 				if(typeof(this.to)=="number"){
 					var des = this.to-1;
 					// drag within one page.
-					if(this.pageIndexMem == this.currentPageIndex){
+					if(this.rowIndexMem == this.currentRowIndex){
 						if(this.isVertical){
 							this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 							this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
@@ -817,7 +792,7 @@
 			}else{
 				var des = this.to - 1;
 				this.highlightBox.style.display = "block";
-				if(this.pageIndexMem == this.currentPageIndex && (!this.actionOut)){
+				if(this.rowIndexMem == this.currentRowIndex && (!this.actionOut)){
 					this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 					this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
@@ -1065,11 +1040,16 @@
 			this.restoreEvent();
 		},
 		isActionOut: function(target){
-			if(target.parentNode.id == "tray"){
-				this.actionOut = true;
+			try{
+				if(target.parentNode.id == "tray"){
+					this.actionOut = true;
+				}
+				else{
+					this.actionOut = false;
+				}
 			}
-			else{
-				this.actionOut = false;
+			catch(error){
+				debug(error);
 			}
 		},
 		restoreEvent: function(){
