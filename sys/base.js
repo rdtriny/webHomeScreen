@@ -7,15 +7,19 @@
 		return eval(window.nativeapps.getAppsListInJson());
 	};
 	var getDefaultIconUri = function(){
+		// If the icons aren't prepared, use a default icon.
 		return window.nativeapps.getDefaultAppIconUri();
 	};
 	//identification is like this: com.orange.browser/com.a.b
-	var launchApp = function(identification){	
-		var pkg = identification.split('/')[0];
-		var cls = identification.split('/')[1];
-		console.log(pkg+"   "+cls);
+	var launchApp = function(identification){
+		// identification stands for the id of appliction div, which is like : com.*.*/com.*.*.*Activity
+		var array = identification.split('/');
+		var pkg = array[0];
+		var cls = array[1];
+		// native interface, two arguments: package name and activity name.
 		window.nativeapps.launchActivity(pkg, cls);
 	};
+	
 	var removeAllChild = function(node){
 		if(typeof node == "object" && node.nodeType == 1){
 			while(node.firstChild){
@@ -25,7 +29,7 @@
 	};
 	
 	var base = function(container, config){		
-		var that = this;		
+		var that = this;	
 		window.addEventListener('load',function(){
 			if(typeof container == "string"){
 				that.container = document.getElementById(container);
@@ -33,6 +37,7 @@
 			else if(typeof container == "object" && container.nodeType == 1){
 				that.container = container;
 			}
+			//copy the configs into the base's prototype.
 			if(config && typeof config == "object"){
 				for(var i in config){
 					that[i] = config[i];
@@ -53,41 +58,57 @@
 			document.body.addEventListener("click", function(e){
 				that.click(e);
 			}, false);
+			// It's a flag to direct the widgets' action.
 			that.isWidgetShow = false;
+			// add the favorite tray area.
 			that.addFixedArea();
+			// some sound effect.
 			that.loadAudio("./mp3.mp3");
+			// launch the system, init all components.
 			that.run();
 		}, false);
 	};
 	base.prototype = {
+		// a function which defines the structure of application's div.
 		appStyle: null,
+		// coordinate when you touch the screen.
 		startX: 0,
 		startY: 0,
+		// length between two fingers.
 		pinchStartLen: 0,
 		pinchEndLen: 0,
-		longTapIndex: null,
+		// the return value of setTimeout
+		longTapIndex: -1,
+		// flag indicates whether longtap fires or not
 		longtapStart: false,
-		dbclickInterval: null,
 		lastClickTime: 0,
-		clickIndex: null,
+		// the return value of setTimeout
+		clickIndex: -1,
 		appsPerRow: 4,
 		appsPerColumn: 4,
 		appsCount: 0,
 		pagesCount: 0,
 		currentPageIndex: 0,
+		// distance from touch start to touch end
 		movedDistance: 0,
+		// distance to the top border of iconContainer div.
 		moveStartX: 0,
 		moveStartY: 0,
+		// the coordinate next to the last.
 		nextToEndX: 0,
 		nextToEndY: 0,
+		// the last coordinate
 		endX: 0,
 		endY: 0,
+		// a nodeElement, a sidebar
 		sidebar: null,
 		lastMoveTime: undefined,
 		stopTouchEnd: false,
 		isVertical: false,
 		isDragging: false,
+		// the queue of all the application, it may change according to the dragging.
 		queue: [],
+		// height,width of the application div.
 		iconWidth: 0,
 		iconHeight: 0,
 		run: function(){
@@ -102,6 +123,7 @@
 				}
 			}, 1000);						
 		},
+		// parse the applications' JSON info and then register them.
 		loadRes: function(){
 			this.queue = [];
 			this.appsCount = 0;
@@ -128,6 +150,7 @@
 				appNode = this.queue[i];
 				this.display(appNode);
 			}
+			// figure out coordinate of each application and the height of iconContainer div.
 			this.styleApp();
 		},
 		//register application to the system.
@@ -140,7 +163,8 @@
 			}
 			this.queue.push(appNode);
 		},	
-		touchstart: function(e){					
+		touchstart: function(e){
+			// display the sidebar.
 			this.sideBar(true);
 			this.pinchEndLen = 0;
 			this.longtapStart = false;
@@ -148,6 +172,7 @@
 				this.startX = e.touches[0].pageX;
 				this.startY = e.touches[0].pageY;
 				
+				//if you touch one point for 1 seconds, longtap fires.
 				var that = this;
 				this.longTapIndex = setTimeout(function(){
 					var event = document.createEvent("Events");
@@ -161,13 +186,16 @@
 			else if(e.touches.length === 2){
 				//this line is very very important, 'cause when two point gestures fire, the length will be 1,2,1 in order. prevent Drag event.
 				clearTimeout(this.longTapIndex);
-				this.pinchStartLen = Math.sqrt((e.touches[1].pageX-e.touches[0].pageX)*(e.touches[1].pageX-e.touches[0].pageX)+(e.touches[1].pageY-e.touches[0].pageY)*(e.touches[1].pageY-e.touches[0].pageY));
+				var lenX = e.touches[1].pageX-e.touches[0].pageX;
+				var lenY = e.touches[1].pageY-e.touches[0].pageY);
+				this.pinchStartLen = Math.sqrt(lenX*lenX+lenY*lenY);
 			}
 		},
 		touchmove: function(e){
 			e.preventDefault();
 			this.lastMoveTime = new Date;					
 			clearTimeout(this.longTapIndex);
+			// if longtap fires just now, dragMove() will run. if not, slide will run.
 			if(!this.longtapStart){
 				if(e.touches.length == 1){
 					this.nextToEndX = this.endX;
@@ -222,6 +250,7 @@
 			}			
 			if(!this.longtapStart){
 				clearTimeout(this.longTapIndex);
+				// when touchmove fires, swipe event will bubble up.
 				if(this.endX){
 					if(Math.abs(this.endX-this.startX) > Math.abs(this.endY-this.startY)){
 						if(this.endX > this.startX){
@@ -297,6 +326,7 @@
 				this.sideBar(false);
 			}			
 		},
+		// sometimes touchcancel when you move out of the screen.
 		touchcancel: function(e){
 			this.touchend(e);
 		},
@@ -304,6 +334,7 @@
 			var that = this;
 			var now = new Date;			
 			var target = e.target;
+			// two clicks within 400ms, double click fires, or two click event fires.
 			if(now - this.lastClickTime<400){
 				clearTimeout(this.clickIndex);
 				var event = document.createEvent("Events");
@@ -406,6 +437,7 @@
 		notify: function(){
 			
 		},
+		// leave space for a widget to open.
 		yield: function(direction, blockNum){
 			var elPos = this.elPos;
 			elPos -= 1;
@@ -444,6 +476,7 @@
 				}
 			}
 		},
+		// parse to float
 		toNum: function(arg){
 			var result = parseFloat(arg);
 			if(isNaN(result)){
@@ -451,6 +484,7 @@
 			}
 			return result;
 		},
+		// if the widget closes, other application will take blank space back.
 		withdraw: function(direction, blockNum){
 			var elPos = this.elPos;
 			elPos -= 1;
@@ -509,6 +543,7 @@
 			}
 		}
 	}
+	// create slidebar, control it.
 	base.fn.extend({
 		sideBar: function(isShow, pos){
 			if(pos){
@@ -549,12 +584,14 @@
 		}
 	});
 	
-	//action definition when drag event fires.
+	// action definition when drag event fires.
 	base.fn.extend({
 		highlightBox: null,
 		dragStart: function(e){
 			var target = e.target;
 			this.pageIndexMem = this.currentPageIndex;
+			
+			// find the node of application or widget
 			while(target.parentNode){
 				if(target.parentNode.id=="iconsContainer" || target.className == "icon"){					
 					break;
@@ -574,20 +611,25 @@
 				this.isDragging = true;
 				this.target = target;
 			}
+			// if the app moves out of favorite tray, or moves into the favorite , or just in iconContainer.
 			this.isActionOut(target);
 		},
 		dragMove: function(e){
 			if(!this.isDragging){
 				return ;
 			}
+			
+			// fires an drag event.
 			this.initDragEvent(e);		
 			var that = this;
 			var pagex = e.touches[0].pageX;
 			var pagey = e.touches[0].pageY;
-			this.caculate();
+			// calculate the app's height and width, once for all.
+			this.calculate();
 			var iconHeight = this.iconHeight;
 			var iconWidth = this.iconWidth;
-			if(that.isVertical){			
+			if(that.isVertical){
+				// decide if user wants to drag to next page or not.
 				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){					
 					clearTimeout(this.timeout);
 					this.timeout = setTimeout(function(){
@@ -631,9 +673,11 @@
 					clearTimeout(this.timeout);
 				}
 			}
+			// calculate the row and column of position where you moved to.
 			var row = Math.round(pagey/iconHeight); //25% height
 			var column = Math.round(pagex/iconWidth+0.5); //25% width
 			if(this.isVertical){
+				// differnet coordinate system, iconContainer and tray. so use two method.
 				if(this.actionOut){
 					this.target.style.left = (pagex-iconWidth/2) + "px";
 					this.target.style.top  = (pagey-iconHeight/2) - document.getElementById("appScreen").clientHeight+ "px";
@@ -652,6 +696,7 @@
 				row += this.currentPageIndex*this.appsPerColumn;
 				this.to = (row-1)*4+column;
 			}
+			// a green box indicates ok, a red box indicates you can't put application there.
 			this.highlight(iconWidth);
 		},
 		dragEnd: function(e){
@@ -680,7 +725,8 @@
 			else{
 				var from = this.from;
 				if(typeof(this.to)=="number"){
-					var des = this.to-1;				
+					var des = this.to-1;
+					// drag within one page.
 					if(this.pageIndexMem == this.currentPageIndex){
 						if(this.isVertical){
 							this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
@@ -700,6 +746,7 @@
 						}
 						this.switchQueue(from, this.to);
 					}else{
+						// drag to next page: if the desination gets an app,you are denied, else ok.
 						if(this.queue[des]){
 							this.target.style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
 							this.target.style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
@@ -709,6 +756,7 @@
 							this.moveQueue(from, this.to);
 						}
 					}
+					// relocate the widgets of an app which is just moved.
 					if(this.target.getAttribute("isWidget")){
 						this.locateWidget(this.target.id, this.target.style.top, this.target.style.left)
 					}
@@ -772,7 +820,7 @@
 			}
 		},
 		//find the app area's height and width
-		caculate: function(){
+		calculate: function(){
 			if(this.iconWidth&&this.iconHeight){
 				return false;
 			}
