@@ -618,9 +618,13 @@
 				target.style.webkitAnimationIterationCount= "infinite";
 				this.isDragging = true;
 				this.target = target;
+				// fires an drag event.
+				this.initDragEvent(e);	
 			}else if(target.getAttribute('iWidget')){
 				this.isDragging = true;
 				this.target = target;
+				// fires an drag event.
+				this.initDragEvent(e);	
 			}
 			// if the app moves out of favorite tray, or moves into the favorite , or just in iconContainer.
 			this.isActionOut(target);
@@ -628,62 +632,14 @@
 		dragMove: function(e){
 			if(!this.isDragging){
 				return ;
-			}
-			
-			// fires an drag event.
-			this.initDragEvent(e);		
+			}				
 			var that = this;
 			var pagex = e.touches[0].pageX;
 			var pagey = e.touches[0].pageY;
 			// calculate the app's height and width, once for all.
 			this.calculate();
 			var iconHeight = this.iconHeight;
-			var iconWidth = this.iconWidth;
-			if(that.isVertical){
-				// decide if user wants to drag to next page or not.
-				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){					
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex+1 < that.pagesCount){
-							that.slideToPage(that.currentPageIndex+1, 100);
-						}
-					}, 1000);
-				}else if(pagey<iconHeight*0.2){
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex-1 >= 0){
-							that.slideToPage(that.currentPageIndex-1, 100);
-						}
-					}, 1000);
-				}
-				else if(pagey>=iconHeight*4){
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						that.moveInTray();
-					}, 1000);
-				}
-				else{
-					clearTimeout(this.timeout);
-				}
-			}else{
-				if(pagex>iconWidth*3.7){
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex+1 < that.pagesCount){
-							that.slideToPage(that.currentPageIndex+1, 100);
-						}
-					}, 1000);
-				}else if(pagex<iconWidth/3){
-					clearTimeout(this.timeout);
-					this.timeout = setTimeout(function(){
-						if(that.currentPageIndex-1 >= 0){
-							that.slideToPage(that.currentPageIndex-1, 100);
-						}
-					}, 1000);
-				}else{
-					clearTimeout(this.timeout);
-				}
-			}
+			var iconWidth = this.iconWidth;			
 			// calculate the row and column of position where you moved to.
 			var row = Math.round(pagey/iconHeight); //25% height
 			var column = Math.round(pagex/iconWidth+0.5); //25% width
@@ -709,6 +665,55 @@
 			}
 			// a green box indicates ok, a red box indicates you can't put application there.
 			this.highlight(iconWidth);
+			
+			if(that.isVertical){
+				// decide if user wants to drag to next page or not.
+				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){					
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex+1 < that.pagesCount){
+							that.slideToPage(that.currentPageIndex+1, 100);
+						}
+					}, 1000);
+				}else if(pagey<iconHeight*0.2){
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex-1 >= 0){
+							that.slideToPage(that.currentPageIndex-1, 100);
+						}
+					}, 1000);
+				}
+				else if(pagey>=iconHeight*4){
+					clearTimeout(this.timeout);
+					// only move the app into the tray once. deny the other request.
+					if(!that.actionIn){
+						this.timeout = setTimeout(function(){
+							that.moveInTray();
+						}, 1000);
+					}
+				}
+				else{
+					clearTimeout(this.timeout);
+				}
+			}else{
+				if(pagex>iconWidth*3.7){
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex+1 < that.pagesCount){
+							that.slideToPage(that.currentPageIndex+1, 100);
+						}
+					}, 1000);
+				}else if(pagex<iconWidth/3){
+					clearTimeout(this.timeout);
+					this.timeout = setTimeout(function(){
+						if(that.currentPageIndex-1 >= 0){
+							that.slideToPage(that.currentPageIndex-1, 100);
+						}
+					}, 1000);
+				}else{
+					clearTimeout(this.timeout);
+				}
+			}
 		},
 		dragEnd: function(e){
 			clearTimeout(this.timeout);
