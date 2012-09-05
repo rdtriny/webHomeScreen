@@ -187,7 +187,7 @@
 				//this line is very very important, 'cause when two point gestures fire, the length will be 1,2,1 in order. prevent Drag event.
 				clearTimeout(this.longTapIndex);
 				var lenX = e.touches[1].pageX-e.touches[0].pageX;
-				var lenY = e.touches[1].pageY-e.touches[0].pageY);
+				var lenY = e.touches[1].pageY-e.touches[0].pageY;
 				this.pinchStartLen = Math.sqrt(lenX*lenX+lenY*lenY);
 			}
 		},
