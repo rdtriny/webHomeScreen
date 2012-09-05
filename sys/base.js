@@ -106,6 +106,8 @@
 		stopTouchEnd: false,
 		isVertical: false,
 		isDragging: false,
+		// can't move background in default.
+		isBGMovable: false, 
 		// the queue of all the application, it may change according to the dragging.
 		queue: [],
 		// height,width of the application div.
@@ -162,7 +164,94 @@
 				appNode.setAttribute("isWidget", "true");
 			}
 			this.queue.push(appNode);
+		},
+		//manage the pages which is hosting app icons. inc for increment
+		styleApp: function(){
+			var icons = this.container.getElementsByClassName("icon");
+			if(this.isVertical){
+				this.container.style.height = 100*this.pagesCount+"%";
+				for(var i=0; i<icons.length; i++){
+					icons[i].style.height = 100/(this.pagesCount*this.appsPerColumn)+"%";						
+					icons[i].style.left = (i%this.appsPerRow)*(100/this.appsPerRow)+"%";
+					icons[i].style.top = Math.floor(i/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+				}
+			}
+			else{
+				this.container.style.width = 100*this.pagesCount+"%";
+				for(var i=0; i<icons.length; i++){					
+					icons[i].style.height = 100/(this.pagesCount*this.appsPerRow)+"%";						
+					icons[i].style.left = (i%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
+					icons[i].style.top = Math.floor(i/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
+				}
+			}
+		},
+		createAppNode: function(app){
+			var appNode;
+			if(this.appStyle && typeof this.appStyle == "function"){
+				appNode = this.appStyle();
+			}else{
+				appNode = document.createElement("div");
+				appNode.className = "icon";
+				appNode.id = app.packageName;				
+				appNode.setAttribute("elPos", this.appsCount);				
+				
+				var img = document.createElement("img");
+				img.src = app.imgSrc;
+				appNode.appendChild(img);
+				
+				var span = document.createElement("span");
+				span.innerHTML = app.title;
+				appNode.appendChild(span);				
+			}
+			return appNode;
 		},	
+		//display all the app icons to the screen.
+		display: function(appNode){
+			this.container.appendChild(appNode);
+		},
+		//update the appearence of the app, change appStyle(a function)
+		updateAppStyle: function(func){
+			if(func && typeof func =="function"){
+				this.appStyle = func;
+				return true;
+			}else{
+				return false;
+			}
+		}
+	};
+	
+	base.fn = base.prototype;
+	base.fn.extend = function(){
+		var values = [];
+		if(arguments.length == 1){
+			var target = this;
+			if(typeof arguments[0] == "object"){
+				for( var name in arguments[0]){
+					target[name] = arguments[0][name];
+					values.push(arguments[0][name]);
+				}
+				return values;
+			}
+		}
+	};
+	
+	// move background image.
+	var moveBG = function(isMovable, coor){
+		if(isMovable && typeof coor.y == 'number'){
+			document.body.style.backgroundPosition = "0 " + (coor.y*100/document.getElementById("iconsContainer").clientHeight)+"%";
+		}
+	};
+	
+	//change sidebar's position.
+	var moveSidebar = function(sidebar, coor){
+		if(sidebar && typeof coor.y == "number"){
+			var top = coor.y;
+			var containerH = document.getElementById("iconsContainer").clientHeight;
+			sidebar.style.top = 100*top/containerH + "%";
+		}
+	};
+	
+	base.fn.extend({
 		touchstart: function(e){
 			// display the sidebar.
 			this.sideBar(true);
@@ -210,10 +299,8 @@
 						}else if(y<0){
 							y=0;
 						}
-						var dis = {x:0, y:y};
-						this.movedDistance = pagey-this.startY;				
-						document.body.style.backgroundPosition = "0 " + (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
-						this.sidebar.style.top = (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
+						var des = {x:0, y:y};
+						this.movedDistance = pagey-this.startY;
 					}
 					else{
 						var x = pagex-this.startX + this.moveStartX;					
@@ -222,12 +309,12 @@
 							x=0;
 						else if(x < maxWidth)
 							x=maxWidth;
-						var dis = {x:x, y:0};
-						this.movedDistance = pagex-this.startX;					
-						document.body.style.backgroundPosition = (-x*100/document.getElementById("iconsContainer").clientWidth)+"% 0%";						
-						this.sidebar.style.left = (y*100/document.getElementById("iconsContainer").clientHeight)+"%";
+						des = {x:x, y:0};
+						this.movedDistance = pagex-this.startX;
 					}
-					this.css3move(this.container, dis);
+					moveSidebar(this.sidebar, des);
+					moveBG(this.isBGMovable, des);
+					this.css3move(this.container, des);
 				}
 				else if(e.touches.length == 2){
 					if(!this.pinchEndLen){
@@ -280,12 +367,12 @@
 				var percent = this.movedDistance / pageHeight;
 				if((Math.abs(percent)>0.06  && lastMoveSpeed>0.3)||(Math.abs(percent)>0.5 && lastMoveSpeed<0.3)){
 					if(percent>0 && this.currentPageIndex>0){
-						var y = (this.currentPageIndex-1)*pageHeight;
-						this.currentPageIndex -= 1;
+						this.currentPageIndex -= 1;						
+						var y = this.currentPageIndex*pageHeight;
 					}
-					else if(percent<0 && this.currentPageIndex<this.pagesCount-1){
-						y = (this.currentPageIndex+1)*pageHeight;
+					else if(percent<0 && this.currentPageIndex<this.pagesCount-1){						
 						this.currentPageIndex += 1;
+						y = this.currentPageIndex*pageHeight;
 					}
 					else {
 						y = this.currentPageIndex*pageHeight;
@@ -295,10 +382,7 @@
 					y = this.currentPageIndex*pageHeight;
 				}			
 				this.moveStartY = y;
-				this.css3move(this.container, {x:0, y:y}, 100);
-				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*this.currentPageIndex+"%";				
-				this.sidebar.style.top = (document.getElementById("appScreen").clientHeight/this.pagesCount)*this.currentPageIndex+"px";				
-				this.sideBar(false);
+				var des = {x:0, y:y};
 			}
 			else{
 				var pageWidth = document.getElementById("appScreen").clientWidth;
@@ -319,12 +403,13 @@
 				else {
 					x = this.currentPageIndex*pageWidth*-1;
 				}			
-				this.moveStartX = x;				
-				this.css3move(this.container, {x:x, y:0}, 100);			
-				document.body.style.backgroundPosition = (100/this.pagesCount)*this.currentPageIndex+"% 0%";
-				this.sidebar.style.left = (document.getElementById("appScreen").clientWidth/this.pagesCount)*this.currentPageIndex+"px";
-				this.sideBar(false);
-			}			
+				this.moveStartX = x;
+				des = {x:x, y:0};
+			}
+			moveSidebar(this.sidebar, des);
+			this.css3move(this.container, des, 100);
+			moveBG(this.isBGMovable, des);			
+			this.sideBar(false);
 		},
 		// sometimes touchcancel when you move out of the screen.
 		touchcancel: function(e){
@@ -352,27 +437,7 @@
 				}, 400);
 			}
 			this.lastClickTime = now;			
-		},
-		createAppNode: function(app){
-			var appNode;
-			if(this.appStyle && typeof this.appStyle == "function"){
-				appNode = this.appStyle();
-			}else{
-				appNode = document.createElement("div");
-				appNode.className = "icon";
-				appNode.id = app.packageName;				
-				appNode.setAttribute("elPos", this.appsCount);				
-				
-				var img = document.createElement("img");
-				img.src = app.imgSrc;
-				appNode.appendChild(img);
-				
-				var span = document.createElement("span");
-				span.innerHTML = app.title;
-				appNode.appendChild(span);				
-			}
-			return appNode;
-		},			
+		},				
 		//switch the pages left/right or up/down.
 		slideToPage: function(pageIndex, time){
 			var pageWidth = document.getElementById("appScreen").clientWidth;
@@ -380,15 +445,14 @@
 			if(this.isVertical){
 				var y = pageIndex*pageHeight;
 				this.css3move(this.container, {x:0, y:y}, time);
-				this.moveStartY = y;				
-				document.body.style.backgroundPosition = "0% " + (100/this.pagesCount)*pageIndex+"%";
+				this.moveStartY = y;
 			}
 			else{
 				var x = pageIndex*pageWidth*-1;
 				this.css3move(this.container, {x:x, y:0}, time);
-				this.moveStartX = x;				
-				document.body.style.backgroundPosition = (100/this.pagesCount)*pageIndex+"% 0%";
+				this.moveStartX = x;
 			}
+			moveBG(this.isBGMovable, {x:x,y:y});
 			this.stopTouchEnd = true;
 			this.currentPageIndex = pageIndex;
 		},
@@ -399,40 +463,7 @@
 			el.style.webkitBackfaceVisiblity = 'hidden';
 			el.style.webkitTransformStyle = 'preserve-3d';
 			el.style.webkitTransitionTimingFunction = 'cubic-bezier(0.33,0.66,0.66,1)';
-		},
-		//manage the pages which is hosting app icons. inc for increment
-		styleApp: function(){
-			var icons = this.container.getElementsByClassName("icon");
-			if(this.isVertical){
-				this.container.style.height = 100*this.pagesCount+"%";
-				for(var i=0; i<icons.length; i++){
-					icons[i].style.height = 100/(this.pagesCount*this.appsPerColumn)+"%";						
-					icons[i].style.left = (i%this.appsPerRow)*(100/this.appsPerRow)+"%";
-					icons[i].style.top = Math.floor(i/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-				}
-			}
-			else{
-				this.container.style.width = 100*this.pagesCount+"%";
-				for(var i=0; i<icons.length; i++){					
-					icons[i].style.height = 100/(this.pagesCount*this.appsPerRow)+"%";						
-					icons[i].style.left = (i%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
-					icons[i].style.top = Math.floor(i/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
-				}
-			}
-		},
-		//display all the app icons to the screen.
-		display: function(appNode){
-			this.container.appendChild(appNode);
-		},
-		//update the appearence of the app, change appStyle(a function)
-		updateAppStyle: function(func){
-			if(func && typeof func =="function"){
-				this.appStyle = func;
-				return true;
-			}else{
-				return false;
-			}
-		},
+		},		
 		//notifacation releated issues.
 		notify: function(){
 			
@@ -528,50 +559,30 @@
 			event.initEvent("drag", true, true);
 			e.target.dispatchEvent(event);
 		}
-	};
-	base.fn = base.prototype;
-	base.fn.extend = function(){
-		var values = [];
-		if(arguments.length == 1){
-			var target = this;
-			if(typeof arguments[0] == "object"){
-				for( var name in arguments[0]){
-					target[name] = arguments[0][name];
-					values.push(arguments[0][name]);
-				}
-				return values;
-			}
-		}
-	}
+	});
+
 	// create slidebar, control it.
 	base.fn.extend({
-		sideBar: function(isShow, pos){
-			if(pos){
-				if(this.isVertical){
-					this.css3move(this.sidebar, {x:0, y:pos}, 100);
-				}else{
-					this.css3move(this.sidebar, {x:pos, y:0}, 100);
-				}
-				return true;
-			}
+		sideBar: function(isShow){
 			if(!this.sidebar && isShow){
 				var sidebar = document.createElement("div");
 				sidebar.style.position = "absolute";
+				var appScreen = document.getElementById("appScreen");
 				if(this.isVertical){
 					sidebar.style.right = "1px";
 					sidebar.style.width = "4px";
-					sidebar.style.height = (document.getElementById("appScreen").clientHeight/this.pagesCount)+"px";
+					sidebar.style.height = (appScreen.clientHeight/this.pagesCount)+"px";
 					
 				}else{
 					sidebar.style.bottom = "1px";
 					sidebar.style.height = "4px";
-					sidebar.style.width = (document.getElementById("appScreen").clientWidth/this.pagesCount)+"px";
+					sidebar.style.width = (appScreen.clientWidth/this.pagesCount)+"px";
 				}
 				sidebar.style.backgroundColor = "black";
 				sidebar.style.opacity = "0.4";
 				sidebar.style.borderRadius = "3px";
 				sidebar.style.zIndex = "99";
-				document.body.appendChild(sidebar);
+				appScreen.appendChild(sidebar);
 				this.sidebar = sidebar;
 			}else if(this.sidebar && isShow){
 				this.sidebar.style.display = "block";
@@ -579,7 +590,7 @@
 				var that = this;
 				setTimeout(function(){
 					that.sidebar.style.display = "none";
-				},500);
+				},1000);
 			}
 		}
 	});
