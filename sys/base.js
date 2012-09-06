@@ -141,7 +141,10 @@
 					icon = apps[i].iconUri;
 				}
 				label = apps[i].label || "LOADING";
-				this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/weather.js"});				
+				if(i == 0)
+					this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/weather.js"});
+				else
+					this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});
 			}
 			return apps;
 		},
@@ -423,7 +426,7 @@
 					while(!target.id && target.id!="iconsContainer"){
 						target = target.parentNode;
 					}				
-					if(/[A-z0-9]+\./ig.test(target.id)){						
+					if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){						
 						launchApp(target.id);
 						console.log(target.id);
 						that.playAudio(0);
@@ -473,44 +476,45 @@
 				}
 		*/
 		yield: function(elPos, widgetSize, direction){
-			console.log(elPos + "           "+ JSON.stringify(widgetSize));
 			if(elPos > 0){
-				var blockNum =  widgetSize.width; 
-				elPos -= 1;
+				var blockNum =  widgetSize.width;
 				var icons = this.queue;
 				var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
-				if(direction == "down"){
-					for(var i=1; i<blockNum; i++){
-							if(icons[elPos+i])
-								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
-					}
-					while(icons[elPos]){
-						for(var i=0; i<blockNum; i++){
-							if(icons[elPos+4+i]){
-								icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)+lineHeight)+"%";
+				var counter = this.appsCount;
+				var remainder = elPos%this.appsPerRow;
+				// Assume every row gets 4 apps but 1 or 2 or 3 apps. 
+				var counter = counter - counter%this.appsPerRow + remainder;
+				/*
+					push the applications which block widget's space downward.
+					according to the widget's width, make a tiny loop each line
+					according to the widget's height, calculate the vertical distance to move.
+					from back to forth
+				*/
+				while(counter >= elPos){
+					for(var i=0; i<widgetSize.width; i++){
+						// if the widget is 2*2 and its app is in the 4th column, scretch to left, or stretch to right
+						if(elPos%this.appsPerRow == 4){
+							var nth = counter-i;
+						}else{
+							nth = counter+i;
+						}
+						
+						// the apps which is right under the app(whose widget is opening) move one block less downward 
+						if(icons[nth-1] && (nth != elPos)){
+							if(nth%this.appsPerRow == remainder){
+								icons[nth-1].style.top = (this.toNum(icons[nth-1].style.top)+lineHeight*(widgetSize.height-1))+"%";
+								this.moveQueue(nth, nth+(widgetSize.height-1)*this.appsPerRow);
+							}
+							else{
+								icons[nth-1].style.top = (this.toNum(icons[nth-1].style.top)+lineHeight*widgetSize.height)+"%";
+								this.moveQueue(nth, nth+widgetSize.height*this.appsPerRow);
 							}
 						}
-						elPos += 4;
 					}
+					counter -= this.appsPerRow;
 				}
-				else if(direction == "right"){
-					while(icons[elPos]){
-						for(var i=1; i<blockNum; i++){
-							if(icons[elPos+i])
-								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
-						}
-						elPos += 4;
-					}
-				}
-				else if(direction == "left"){
-					while(icons[elPos]){
-						for(var i=blockNum-1; i>0; i--){
-							if(icons[elPos-i])
-								icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)+lineHeight)+"%";
-						}
-						elPos += 4;
-					}
-				}
+				// log the new queue of apps.
+				this.queue = icons;
 			}
 		},
 		// parse to float
@@ -624,6 +628,7 @@
 				target.style.webkitAnimationName= "shake";
 				target.style.webkitAnimationTimingFunction="ease";
 				target.style.webkitAnimationIterationCount= "infinite";
+				target.style.zIndex = "10";
 				this.isDragging = true;
 				this.target = target;
 				// fires an drag event.
@@ -646,9 +651,12 @@
 			var pagey = e.touches[0].pageY;			
 			var iconHeight = this.iconHeight;
 			var iconWidth = this.iconWidth;			
-			// calculate the row and column of position where you moved to.
-			var row = Math.round(pagey/iconHeight); //25% height
-			var column = Math.round(pagex/iconWidth+0.5); //25% width
+			/*
+				calculate the row and column of position where you moved to.
+				the following two 0.4 are used to correct the app's top-left corner to the center.
+			*/
+			var row = Math.round(pagey/iconHeight+0.4); //25% height
+			var column = Math.round(pagex/iconWidth+0.4); //25% width
 			if(this.isVertical){
 				// differnet coordinate system, iconContainer and tray. so use two method.
 				if(this.actionOut){
@@ -658,9 +666,6 @@
 					this.target.style.left = (pagex-iconWidth/2)+ "px";
 					this.target.style.top  = (pagey-iconHeight/2)+this.currentRowIndex*iconHeight + "px";
 				}
-			}else{
-				this.target.style.left = (pagex-iconWidth/2)+ this.currentRowIndex*iconHeight +"px";
-				this.target.style.top  = (pagey-iconHeight/2)+"px";
 			}
 			row = row||1;
 			if(this.actionIn || row>4){
@@ -760,6 +765,8 @@
 							this.moveQueue(from, this.to);
 						}
 					}
+					// restroe its default value.
+					this.target.style.zIndex = "";
 					// relocate the widgets of an app which is just moved.
 					if(this.target.getAttribute("isWidget")){
 						this.locateWidget(this.target.id, this.target.style.top, this.target.style.left)
@@ -774,14 +781,18 @@
 			this.from = false;
 		},
 		//the following three functions work for managing the queue of all apps.
-		switchQueue: function(from, to){			
-			var tmp = this.queue[to-1];
-			this.queue[to-1] = this.queue[from-1];			
-			this.queue[from-1] = tmp;	
+		switchQueue: function(from, to){
+			if(from != to){
+				var tmp = this.queue[to-1];
+				this.queue[to-1] = this.queue[from-1];			
+				this.queue[from-1] = tmp;
+			}
 		},
 		moveQueue: function(from, to){
-			this.queue[to-1] = this.queue[from-1];
-			this.queue[from-1] = undefined;			
+			if(from != to){
+				this.queue[to-1] = this.queue[from-1];
+				this.queue[from-1] = undefined;
+			}
 		},
 		delQueue: function(from){
 			this.queue[from-1] = undefined;
@@ -878,19 +889,20 @@
 			remember the configuration of all the widgets.
 			the wgt's structure is like:
 			{
-				"com.lge.camera/com.lge.camera.CamLoading" : {	widget:"flash", // widget DOM Node's id.
-											open: {
-												node: "com.lge.camera/com.lge.camera.CamLoading", // defines which node to open widget
-												func: open // a function defined by user, defines the appearance when opening widgets.
-											},
-											close: {
-												node: "flash", // defines which node to close widget
-												func: disapear // a function defines the appearance when closing widgets.
-											}},
-											size: { // the widget's height and width, not pixels but the application block number.
-												width: 2, 
-												height 2
-											}
+				"com.lge.camera/com.lge.camera.CamLoading" : {	
+					widget:"flash", // widget DOM Node's id.
+					open: {
+						node: "com.lge.camera/com.lge.camera.CamLoading", // defines which node to open widget
+						func: open // a function defined by user, defines the appearance when opening widgets.
+					},
+					close: {
+						node: "flash", // defines which node to close widget
+						func: disapear // a function defines the appearance when closing widgets.
+					}},
+					size: { // the widget's height and width, not pixels but the application block number.
+						width: 2, 
+						height 2
+					}
 			}
 		*/
 		registerWidget: function(wgt){
@@ -957,7 +969,7 @@
 					obj.close.func(e);
 					// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
 					setTimeout(function(){
-						that.withdraw(elPos, that.widgets[key].size, "left");						
+						//that.withdraw(elPos, that.widgets[key].size, "left");						
 						that.isWidgetShow = false;
 						closeNode.style.display = "none";
 					},800);
@@ -1053,12 +1065,14 @@
 		//refresh all apps in the tray.
 		arrange: function(){
 			var icons = this.tray.getElementsByClassName("icon");
-			for(var i=0; i<icons.length; i++){
+			var num = icons.length;
+			var spacing = (100-20*num)/(num+1);
+			for(var i=0; i<num; i++){
 				icons[i].style.webkitAnimation = "";
 				icons[i].style.top = "0";
 				icons[i].style.height = "100%";
-				icons[i].style.width = 100/icons.length + "%";
-				icons[i].style.left = 100/icons.length*i + "%";
+				icons[i].style.width = "20%";
+				icons[i].style.left = (spacing+20)*i + spacing + "%";
 			}
 		},
 		moveOutTray: function(){
@@ -1072,6 +1086,7 @@
 				var des = this.to-1;
 				this.tray.removeChild(this.target);
 				this.target = this.targetMem;	
+				console.log(des);
 				this.queue[des] = this.target;
 				this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 				this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";

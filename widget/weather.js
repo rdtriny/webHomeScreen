@@ -26,7 +26,6 @@
 			var column = Math.floor(pagex/iconWidth);
 			flashWindow.style.top = row*20 + "%";
 			flashWindow.style.left = column*25 + "%";
-			system.yield("right", 3);
 			flashWindow.style.display = "block";
 			SM = new spriteMovie(imgSrc, flashWinCon, movieArray);		
 			setTimeout(function(){			
@@ -44,11 +43,6 @@
 		infoEl.style.webkitTransitionDuration = '600ms';
 		document.getElementById("pic").style.opacity = "0";
 		clearInterval(window.raindrop);
-		setTimeout(function(){
-			system.withdraw("left", 3);
-			flashWindow.style.display = "none";
-			system.isWidgetShow = false;
-		},800);
 	}
 			
 	function stretchTo3(){
@@ -68,16 +62,22 @@
 			}
 		}, 500);
 	}
-	system.logWidget({
-		"com.orange.weather":{widget:"flash",
-							open:{
-								node: "com.orange.weather",
-								func: open
-							},
-							close:{
-								node: "flash",
-								func: disapear
-							}}
+	system.registerWidget({
+		"com.lge.camera/com.lge.camera.CamLoading":{
+			widget:"flash",
+			open: {
+				node: "com.lge.camera/com.lge.camera.CamLoading",
+				func: open
+			},
+			close: {
+				node: "flash",
+				func: disapear
+			},
+			size: {
+				width: 3,
+				height: 1
+			}
+		}
 	});
 	
 	flashWindow.addEventListener("swipe", function(e){
