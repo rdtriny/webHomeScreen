@@ -141,7 +141,7 @@
 					icon = apps[i].iconUri;
 				}
 				label = apps[i].label || "LOADING";
-				this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});				
+				this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/weather.js"});				
 			}
 			return apps;
 		},
@@ -425,6 +425,7 @@
 					}				
 					if(/[A-z0-9]+\./ig.test(target.id)){						
 						launchApp(target.id);
+						console.log(target.id);
 						that.playAudio(0);
 					}
 				}, 400);
@@ -463,42 +464,52 @@
 		notify: function(){
 			
 		},
-		// leave space for a widget to open.
-		yield: function(direction, blockNum){
-			var elPos = this.elPos;
-			elPos -= 1;
-			var icons = this.queue;
-			var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
-			if(direction == "down"){
-				for(var i=1; i<blockNum; i++){
-						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
+		/* 
+			leave space for a widget to open.
+			the data structure of widgetSize:
+			size : {
+				width: 2, // equals to 2 application blocks in width
+				height: 2 // equals to 2 application blocks in height
 				}
-				while(icons[elPos]){
-					for(var i=0; i<blockNum; i++){
-						if(icons[elPos+4+i]){
-							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)+lineHeight)+"%";
-						}
-					}
-					elPos += 4;
-				}
-			}
-			else if(direction == "right"){
-				while(icons[elPos]){
+		*/
+		yield: function(elPos, widgetSize, direction){
+			console.log(elPos + "           "+ JSON.stringify(widgetSize));
+			if(elPos > 0){
+				var blockNum =  widgetSize.width; 
+				elPos -= 1;
+				var icons = this.queue;
+				var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
+				if(direction == "down"){
 					for(var i=1; i<blockNum; i++){
-						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
+							if(icons[elPos+i])
+								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
 					}
-					elPos += 4;
+					while(icons[elPos]){
+						for(var i=0; i<blockNum; i++){
+							if(icons[elPos+4+i]){
+								icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)+lineHeight)+"%";
+							}
+						}
+						elPos += 4;
+					}
 				}
-			}
-			else if(direction == "left"){
-				while(icons[elPos]){
-					for(var i=blockNum-1; i>0; i--){
-						if(icons[elPos-i])
-							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)+lineHeight)+"%";
+				else if(direction == "right"){
+					while(icons[elPos]){
+						for(var i=1; i<blockNum; i++){
+							if(icons[elPos+i])
+								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)+lineHeight)+"%";
+						}
+						elPos += 4;
 					}
-					elPos += 4;
+				}
+				else if(direction == "left"){
+					while(icons[elPos]){
+						for(var i=blockNum-1; i>0; i--){
+							if(icons[elPos-i])
+								icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)+lineHeight)+"%";
+						}
+						elPos += 4;
+					}
 				}
 			}
 		},
@@ -511,41 +522,43 @@
 			return result;
 		},
 		// if the widget closes, other application will take blank space back.
-		withdraw: function(direction, blockNum){
-			var elPos = this.elPos;
-			elPos -= 1;
-			var icons = this.queue;			
-			var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
-			if(direction == "up"){
-				for(var i=1; i<blockNum; i++){
-						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
-				}
-				while(icons[elPos]){
-					for(var i=0; i<blockNum; i++){
-						if(icons[elPos+4+i]){
-							icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)-lineHeight)+"%";
-						}
-					}
-					elPos += 4;
-				}
-			}
-			else if(direction == "left"){
-				while(icons[elPos]){
+		withdraw: function(elPos, widgetSize, direction){
+			if(elPos > 0){
+				elPos -= 1;
+				var blockNum = widgetSize.width;
+				var icons = this.queue;			
+				var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
+				if(direction == "up"){
 					for(var i=1; i<blockNum; i++){
-						if(icons[elPos+i])
-							icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
+							if(icons[elPos+i])
+								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
 					}
-					elPos += 4;
+					while(icons[elPos]){
+						for(var i=0; i<blockNum; i++){
+							if(icons[elPos+4+i]){
+								icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)-lineHeight)+"%";
+							}
+						}
+						elPos += 4;
+					}
 				}
-			}
-			else if(direction == "right"){
-				while(icons[elPos]){
-					for(var i=blockNum-1; i>0; i--){
-						if(icons[elPos-i])
-							icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)-lineHeight)+"%";
+				else if(direction == "left"){
+					while(icons[elPos]){
+						for(var i=1; i<blockNum; i++){
+							if(icons[elPos+i])
+								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
+						}
+						elPos += 4;
 					}
-					elPos += 4;
+				}
+				else if(direction == "right"){
+					while(icons[elPos]){
+						for(var i=blockNum-1; i>0; i--){
+							if(icons[elPos-i])
+								icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)-lineHeight)+"%";
+						}
+						elPos += 4;
+					}
 				}
 			}
 		},
@@ -861,8 +874,26 @@
 			}
 			return false;
 		},
-		//remember the configuration of all the widgets.
-		logWidget: function(wgt){
+		/* 
+			remember the configuration of all the widgets.
+			the wgt's structure is like:
+			{
+				"com.lge.camera/com.lge.camera.CamLoading" : {	widget:"flash", // widget DOM Node's id.
+											open: {
+												node: "com.lge.camera/com.lge.camera.CamLoading", // defines which node to open widget
+												func: open // a function defined by user, defines the appearance when opening widgets.
+											},
+											close: {
+												node: "flash", // defines which node to close widget
+												func: disapear // a function defines the appearance when closing widgets.
+											}},
+											size: { // the widget's height and width, not pixels but the application block number.
+												width: 2, 
+												height 2
+											}
+			}
+		*/
+		registerWidget: function(wgt){
 			for(var i in wgt){
 				this.widgets[i] = wgt[i];
 				try{
@@ -880,8 +911,13 @@
 				this.initWidget(i, wgt[i]);
 			}
 		},
-		//add some listeners on the widget.
+		
+		/* 	add some listeners on the widget. 
+			defines the methods of how to open/close widgets.
+		*/
 		initWidget: function(key,obj){
+			var that = this;
+			var elPos = -1;
 			if(typeof obj.open.node == "string"){
 				this.widgets[key].open.node = obj.open.node;
 				var openNode = document.getElementById(obj.open.node);
@@ -896,16 +932,17 @@
 			}else if(typeof obj.close.node == "object" && obj.close.node.nodeType == 1){
 				this.widgets[key].close.node = obj.close.node.id;
 				var closeNode = obj.close.node;
-			}			
-			var that = this;
+			}
 			//Hide the app icon, after open its widget
 			openNode.addEventListener("dbclick", function(e){
 				for(var j=0; j<that.queue.length; j++){
 					if(that.queue[j] && that.queue[j].id === key){
-						that.elPos = j+1;
+						elPos = j+1;
+						// yield space for widget, pass the widget's size a the optional direction
 					}
 				}
 				try{
+					that.yield(elPos, that.widgets[key].size, "right");
 					obj.open.func(e);
 				}
 				catch(error){
@@ -918,6 +955,12 @@
 				openNode.style.left = that.widgets[key].widget.style.left;
 				try{
 					obj.close.func(e);
+					// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
+					setTimeout(function(){
+						that.withdraw(elPos, that.widgets[key].size, "left");						
+						that.isWidgetShow = false;
+						closeNode.style.display = "none";
+					},800);
 				}
 				catch(error){
 					console.log(error);
