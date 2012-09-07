@@ -1042,7 +1042,8 @@
 		moveInTray: function(){			
 			if(!this.checkFull()){
 				var target = this.target.cloneNode(true);
-				this.tray.appendChild(target);				
+				this.tray.appendChild(target);
+				this.target.style.display = "none";
 				this.actionIn = true;			
 				this.targetMem = target;
 				this.arrange();
@@ -1111,12 +1112,49 @@
 			}
 		},
 		restoreEvent: function(){
-			var widget = this.widgets[this.target.id];
+			var key = this.target.id;
+			var that = this;
+			var widget = this.widgets[key];
+			var openNode = document.getElementById(widget.open.node);
+			var closeNode = document.getElementById(widget.close.node);
+			
+			// find the new location for widget according to its app's location.
+			widget.widget.style.top = this.target.style.top;
+			widget.widget.style.left = this.target.style.left;
+			
+			//restore the open event and close event to the app& widget.
 			if(widget){
-				document.getElementById(widget.open.node).addEventListener("dbclick", widget.open.func, false);
-				document.getElementById(widget.close.node).addEventListener("dbclick", widget.close.func, false);
-				widget.widget.style.top = this.target.style.top;
-				widget.widget.style.left = this.target.style.left;
+				openNode.addEventListener("dbclick", function(e){
+					for(var j=0; j<that.queue.length; j++){
+						if(that.queue[j] && that.queue[j].id === key){
+							var elPos = j+1;
+							// yield space for widget, pass the widget's size a the optional direction
+						}
+					}
+					try{
+						that.yield(elPos, that.widgets[key].size, "right");
+						widget.open.func(e);
+					}
+					catch(error){
+						console.log(error);
+					}
+				}, false);
+				closeNode.addEventListener("dbclick", function(e){
+					openNode.style.top = that.widgets[key].widget.style.top;
+					openNode.style.left = that.widgets[key].widget.style.left;
+					try{
+						widget.close.func(e);
+						// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
+						setTimeout(function(){
+							//that.withdraw(elPos, that.widgets[key].size, "left");						
+							that.isWidgetShow = false;
+							closeNode.style.display = "none";
+						},800);
+					}
+					catch(error){
+						console.log(error);
+					}
+				}, false);
 			}
 		}
 	});
