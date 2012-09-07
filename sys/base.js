@@ -279,7 +279,6 @@
 	
 	//extend debug to base.prototype and base itself
 	base.debug = base.fn.extend({debug: debug})[0];
-	base.debug({a:1,b:'b', c:{d:'dd'},e:[1,2,3,4]});
 	// move background image.
 	var moveBG = function(isMovable, coor){
 		if(isMovable && typeof coor.y == 'number'){
