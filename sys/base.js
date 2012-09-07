@@ -542,8 +542,8 @@
 		This is a usage of command design pattern.
 		the entire structure:
 		base.prototype.yield:
-			base.prototype.yield.prototype.block22 // means block 2*2 widget's yield method.
-			base.prototype.yield.prototype.block14 // means block 1*4 widget's yield method.
+			base.prototype.yield.block22 // means block 2*2 widget's yield method.
+			base.prototype.yield.block14 // means block 1*4 widget's yield method.
 			and so on.
 	*/
 	yield.block13 = function(elPos, widgetSize, direction){
