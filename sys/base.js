@@ -28,7 +28,46 @@
 		}
 	};
 	
-	var base = function(container, config){		
+	// parse to float
+	var toNum = function(arg){
+		var result = parseFloat(arg);
+		if(isNaN(result)){
+			result = 0;
+		}
+		return result;
+	}
+	
+	//add a API debug, for logging info
+	// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
+	var debug = function(){
+		console.log(debug.concat(arguments));
+	};
+	debug.concat = function(){
+		var str="";
+		for(var i=0; i<arguments.length; i++){
+			var type = toString.call(arguments[i]);
+			if(type.indexOf('Object') != -1){
+				str += '{';
+				for(var j in arguments[i]){
+						str += j+':'+debug.concat(arguments[i][j]);
+				}
+				str += '},';
+			}
+			else if(type.indexOf('Array') != -1){
+				str += '[';
+				for(var n=0; n<arguments[i].length; n++){
+					str += debug.concat(arguments[i][n]);
+				}
+				str +='],';
+			}
+			else{
+				str += arguments[i]+',';				
+			}
+		}
+		return str;
+	}
+	
+	var base = function(container, config){
 		var that = this;	
 		window.addEventListener('load',function(){
 			if(typeof container == "string"){
@@ -238,6 +277,9 @@
 		}
 	};
 	
+	//extend debug to base.prototype and base itself
+	base.debug = base.fn.extend({debug: debug})[0];
+	base.debug({a:1,b:'b', c:{d:'dd'},e:[1,2,3,4]});
 	// move background image.
 	var moveBG = function(isMovable, coor){
 		if(isMovable && typeof coor.y == 'number'){
@@ -467,112 +509,89 @@
 		notify: function(){
 			
 		},
-		/* 
-			leave space for a widget to open.
-			the data structure of widgetSize:
-			size : {
-				width: 2, // equals to 2 application blocks in width
-				height: 2 // equals to 2 application blocks in height
-				}
-		*/
-		yield: function(elPos, widgetSize, direction){
-			if(elPos > 0){
-				var blockNum =  widgetSize.width;
-				var icons = this.queue;
-				var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
-				var counter = this.appsCount;
-				var remainder = elPos%this.appsPerRow;
-				// Assume every row gets 4 apps but 1 or 2 or 3 apps. 
-				var counter = counter - counter%this.appsPerRow + remainder;
-				/*
-					push the applications which block widget's space downward.
-					according to the widget's width, make a tiny loop each line
-					according to the widget's height, calculate the vertical distance to move.
-					from back to forth
-				*/
-				while(counter >= elPos){
-					for(var i=0; i<widgetSize.width; i++){
-						// if the widget is 2*2 and its app is in the 4th column, scretch to left, or stretch to right
-						if(elPos%this.appsPerRow == 4){
-							var nth = counter-i;
-						}else{
-							nth = counter+i;
-						}
-						
-						// the apps which is right under the app(whose widget is opening) move one block less downward 
-						if(icons[nth-1] && (nth != elPos)){
-							if(nth%this.appsPerRow == remainder){
-								icons[nth-1].style.top = (this.toNum(icons[nth-1].style.top)+lineHeight*(widgetSize.height-1))+"%";
-								this.moveQueue(nth, nth+(widgetSize.height-1)*this.appsPerRow);
-							}
-							else{
-								icons[nth-1].style.top = (this.toNum(icons[nth-1].style.top)+lineHeight*widgetSize.height)+"%";
-								this.moveQueue(nth, nth+widgetSize.height*this.appsPerRow);
-							}
-						}
-					}
-					counter -= this.appsPerRow;
-				}
-				// log the new queue of apps.
-				this.queue = icons;
-			}
-		},
-		// parse to float
-		toNum: function(arg){
-			var result = parseFloat(arg);
-			if(isNaN(result)){
-				result = 0;
-			}
-			return result;
-		},
-		// if the widget closes, other application will take blank space back.
-		withdraw: function(elPos, widgetSize, direction){
-			if(elPos > 0){
-				elPos -= 1;
-				var blockNum = widgetSize.width;
-				var icons = this.queue;			
-				var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
-				if(direction == "up"){
-					for(var i=1; i<blockNum; i++){
-							if(icons[elPos+i])
-								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
-					}
-					while(icons[elPos]){
-						for(var i=0; i<blockNum; i++){
-							if(icons[elPos+4+i]){
-								icons[elPos+4+i].style.top = (this.toNum(icons[elPos+4+i].style.top)-lineHeight)+"%";
-							}
-						}
-						elPos += 4;
-					}
-				}
-				else if(direction == "left"){
-					while(icons[elPos]){
-						for(var i=1; i<blockNum; i++){
-							if(icons[elPos+i])
-								icons[elPos+i].style.top = (this.toNum(icons[elPos+i].style.top)-lineHeight)+"%";
-						}
-						elPos += 4;
-					}
-				}
-				else if(direction == "right"){
-					while(icons[elPos]){
-						for(var i=blockNum-1; i>0; i--){
-							if(icons[elPos-i])
-								icons[elPos-i].style.top = (this.toNum(icons[elPos-i].style.top)-lineHeight)+"%";
-						}
-						elPos += 4;
-					}
-				}
-			}
-		},
 		initDragEvent: function(e){
 			var event = document.createEvent("Events");
 			event.initEvent("drag", true, true);
 			e.target.dispatchEvent(event);
 		}
 	});
-
+	
+	/* 
+		leave space for a widget to open.
+		the data structure of widgetSize:
+		size : {
+			width: 2, // equals to 2 application blocks in width
+			height: 2 // equals to 2 application blocks in height
+			}
+		direction // which direction the widget are stretching to.
+	*/
+	var yield = function(elPos, widgetSize, direction){
+		if(widgetSize && elPos>0){
+			if(widgetSize.width == 2 && widgetSize.width == 2){
+				//use the block** function , but switch the context to the global system.
+				this.yield.block22.call(this, elPos, widgetSize, direction);
+			}
+			else if(widgetSize.width == 4 && widgetSize.height == 1){
+				this.yield.block14.call(this, elPos, widgetSize, direction);
+			}else if(widgetSize.width == 3 && widgetSize.height == 1){
+				this.yield.block13.call(this, elPos, widgetSize, direction);
+			}
+		}
+	}
+	/*
+		yield has a prototype also, yield dispatch the work to its corresponding prototype child according to the widget size.
+		This is a usage of command design pattern.
+		the entire structure:
+		base.prototype.yield:
+			base.prototype.yield.prototype.block22 // means block 2*2 widget's yield method.
+			base.prototype.yield.prototype.block14 // means block 1*4 widget's yield method.
+			and so on.
+	*/
+	yield.block13 = function(elPos, widgetSize, direction){
+		var icons = this.queue;
+		var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
+		var counter = this.appsCount;
+		var remainder = elPos%this.appsPerRow;
+		// Assume every row gets 4 apps but 1 or 2 or 3 apps. 
+		var counter = counter - counter%this.appsPerRow + remainder;
+		/*
+			push the applications which block widget's space downward.
+			according to the widget's width, make a tiny loop each line
+			according to the widget's height, calculate the vertical distance to move.
+			from back to forth
+		*/
+		while(counter >= elPos){
+			for(var i=0; i<widgetSize.width; i++){
+				// if the widget is 2*2 and its app is in the 4th column, scretch to left, or stretch to right
+				if(elPos%this.appsPerRow == 4){
+					var nth = counter-i;
+				}else{
+					nth = counter+i;
+				}
+				
+				// the apps which is right under the app(whose widget is opening) move one block less downward 
+				if(icons[nth-1] && (nth != elPos)){
+					if(nth%this.appsPerRow == remainder){
+						icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*(widgetSize.height-1))+"%";
+						this.moveQueue(nth, nth+(widgetSize.height-1)*this.appsPerRow);
+					}
+					else{
+						icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*widgetSize.height)+"%";
+						this.moveQueue(nth, nth+widgetSize.height*this.appsPerRow);
+					}
+				}
+			}
+			counter -= this.appsPerRow;
+		}
+		// log the new queue of apps.
+		this.queue = icons;
+	};
+	yield.block14 = function(){
+		
+	};
+	
+	base.fn.extend({yield:yield});
+	
 	// create slidebar, control it.
 	base.fn.extend({
 		sideBar: function(isShow){
@@ -986,38 +1005,6 @@
 			widget.style.top = top;
 		}
 	});
-	//add a API debug, for logging info
-	var debug = base.debug = base.fn.extend({
-		// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
-		debug: function(){
-			var str="";
-			for(var i=0; i<arguments.length; i++){
-				if(typeof arguments[i] == "object"){
-					for(var j in arguments[i]){
-						if(typeof arguments[i][j] == "object"){
-							str += " {";
-							str += j;
-							str += ":";
-							str += debug(arguments[i][j]);
-							str += "}, ";
-						}
-						else{
-							str += " {";
-							str += j;
-							str += ":";
-							str += arguments[i][j];	
-							str += "}, ";
-						}
-					}
-				}else{
-					str += " ";
-					str += arguments[i];				
-				}
-			}
-			console.log(str);
-			return str;
-		}
-	})[0];
 	
 	//logic about the favorite tray. 
 	base.fn.extend({
@@ -1086,8 +1073,7 @@
 			if(typeof isSuccess == 'boolean' && isSuccess){
 				var des = this.to-1;
 				this.tray.removeChild(this.target);
-				this.target = this.targetMem;	
-				console.log(des);
+				this.target = this.targetMem;
 				this.queue[des] = this.target;
 				this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 				this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
