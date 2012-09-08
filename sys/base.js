@@ -40,7 +40,13 @@
 	//add a API debug, for logging info
 	// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
 	var debug = function(){
-		console.log(debug.concat.apply(this, arguments).slice(0, -1));
+		// sometimes the stack will be overflowed, may cause error.
+		try{
+			console.log(debug.concat.apply(this, arguments).slice(0, -1));
+		}
+		catch(error){
+			console.log(error);
+		}
 	};
 	debug.concat = function(){
 		var str="";
