@@ -40,13 +40,9 @@
 	//add a API debug, for logging info
 	// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
 	var debug = function(){
-		// sometimes the stack will be overflowed, may cause error.
-		try{
-			console.log(debug.concat.apply(this, arguments).slice(0, -1));
-		}
-		catch(error){
-			console.log(error);
-		}
+		var str = debug.concat.apply(this, arguments).slice(0, -1)
+		console.log(str);
+		return str;
 	};
 	debug.concat = function(){
 		var str="";
@@ -57,7 +53,8 @@
 				for(var j in arguments[i]){
 					str += j+':'+debug.concat(arguments[i][j]);
 				}
-				str = str.substr(0, str.length-1);
+				if(str[str.length-1] != '{')
+					str = str.substr(0, str.length-1);
 				str += '},';
 			}
 			else if(type.indexOf('Array') != -1){
@@ -65,7 +62,8 @@
 				for(var n=0; n<arguments[i].length; n++){
 					str +=  debug.concat(arguments[i][n]);
 				}
-				str = str.substr(0, str.length-1);
+				if(str[str.length-1] != '[')
+				    str = str.substr(0, str.length-1);
 				str +='],';
 			}
 			else{
