@@ -153,7 +153,6 @@
 		// a nodeElement, a sidebar
 		sidebar: null,
 		lastMoveTime: undefined,
-		stopTouchEnd: false,
 		isVertical: false,
 		isDragging: false,
 		// can't move background in default.
@@ -386,13 +385,10 @@
 				this.dragMove(e);
 			}
 		},
-		touchend: function(e){
-			this.dragEnd(e);
-			if(this.stopTouchEnd){
-				this.stopTouchEnd = false;
-				return ;
-			}
-			if(!this.longtapStart){
+		touchend: function(e){			
+			if(this.longtapStart){
+				this.dragEnd(e);				
+			}else{
 				clearTimeout(this.longTapIndex);
 				var w = this.endX-this.nextToEndX;
 				var h = this.endY-this.nextToEndY;
@@ -421,43 +417,44 @@
 					e.target.dispatchEvent(swipe);
 					this.endX = 0;
 				}
-			}
-			if(this.isVertical){
-				var percent = this.movedDistance / (this.iconHeight*this.appsPerColumn);				
-				// max height to iconContainer's top border
-				var max = (this.pagesCount-1)*this.appsPerColumn;
-				// swipe in high speed, slide to next page.
-				if(lastMoveSpeed>0.3){
-					if(percent>0){
-						this.currentRowIndex -= this.appsPerColumn;
-						// make sure rowindex > 0
-						this.currentRowIndex = this.currentRowIndex>0 ? this.currentRowIndex : 0;
+				
+				if(this.isVertical){
+					var percent = this.movedDistance / (this.iconHeight*this.appsPerColumn);				
+					// max height to iconContainer's top border
+					var max = (this.pagesCount-1)*this.appsPerColumn;
+					// swipe in high speed, slide to next page.
+					if(lastMoveSpeed>0.3){
+						if(percent>0){
+							this.currentRowIndex -= this.appsPerColumn;
+							// make sure rowindex > 0
+							this.currentRowIndex = this.currentRowIndex>0 ? this.currentRowIndex : 0;
+						}
+						else if(percent<0){
+							this.currentRowIndex += this.appsPerColumn;
+							// make sure rowindex < totalnum
+							this.currentRowIndex = this.currentRowIndex < max ? this.currentRowIndex : max;
+						}
+					// low speed slide row to row.
+					}else{
+						var movedRow = Math.round(percent*this.appsPerColumn);
+						// note that movedRow is negative when slide up, positive when slide down.
+						this.currentRowIndex -= movedRow;
+						// make sure rowindex > 0 && rowIndex < max
+						if(this.currentRowIndex < 0)
+							this.currentRowIndex  = 0;
+						else if(this.currentRowIndex>max)
+							this.currentRowIndex = max;					
+						
 					}
-					else if(percent<0){
-						this.currentRowIndex += this.appsPerColumn;
-						// make sure rowindex < totalnum
-						this.currentRowIndex = this.currentRowIndex < max ? this.currentRowIndex : max;
-					}
-				// low speed slide row to row.
-				}else{
-					var movedRow = Math.round(percent*this.appsPerColumn);
-					// note that movedRow is negative when slide up, positive when slide down.
-					this.currentRowIndex -= movedRow;
-					// make sure rowindex > 0 && rowIndex < max
-					if(this.currentRowIndex < 0)
-						this.currentRowIndex  = 0;
-					else if(this.currentRowIndex>max)
-						this.currentRowIndex = max;					
-					
+					var y = this.currentRowIndex*this.iconHeight;
+					this.moveStartY = y;
+					var des = {x:0, y:y};
 				}
-				var y = this.currentRowIndex*this.iconHeight;
-				this.moveStartY = y;
-				var des = {x:0, y:y};
-			}
-			moveSidebar(this.sidebar, des);
-			this.css3move(this.container, des, 100);
-			moveBG(this.isBGMovable, des);
-			this.sideBar(false);
+				moveSidebar(this.sidebar, des);
+				this.css3move(this.container, des, 100);
+				moveBG(this.isBGMovable, des);
+				this.sideBar(false);
+			}			
 		},
 		// sometimes touchcancel when you move out of the screen.
 		touchcancel: function(e){
@@ -505,7 +502,6 @@
 				this.moveStartY = y;
 			}
 			moveBG(this.isBGMovable, {x:0,y:y});
-			this.stopTouchEnd = true;
 		},
 		css3move: function(el, distance, time){
 			time = time || 0;
@@ -549,7 +545,7 @@
 		}
 	}
 	/*
-		yield has a prototype also, yield dispatch the work to its corresponding prototype child according to the widget size.
+		yield has a prototype also, yield dispatch the work to its corresponding child according to the widget size.
 		This is a usage of command design pattern.
 		the entire structure:
 		base.prototype.yield:
@@ -560,38 +556,129 @@
 	yield.block13 = function(elPos, widgetSize, direction){
 		var icons = this.queue;
 		var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
-		var counter = this.appsCount;
 		var remainder = elPos%this.appsPerRow;
-		// Assume every row gets 4 apps but 1 or 2 or 3 apps. 
-		var counter = counter - counter%this.appsPerRow + remainder;
+		// Assume every row gets 4 apps but 1 or 2 or 3 apps.
+		var counter = this.appsCount - this.appsCount%this.appsPerRow + remainder;
+		
 		/*
 			push the applications which block widget's space downward.
 			according to the widget's width, make a tiny loop each line
 			according to the widget's height, calculate the vertical distance to move.
 			from back to forth
 		*/
-		while(counter >= elPos){
-			for(var i=0; i<widgetSize.width; i++){
-				// if the widget is 2*2 and its app is in the 4th column, scretch to left, or stretch to right
-				if(elPos%this.appsPerRow == 4){
-					var nth = counter-i;
-				}else{
-					nth = counter+i;
+		var that = this;
+		// why use that for this?
+		// a function of an object was called , the object was passed to the function as 'this', if the object can't be identified, window was passed like the following function.
+		function down(){
+			while(counter >= elPos){
+				for(var i=0; i<widgetSize.width; i++){
+					// if the widget is 2*2 and its app is in the 4th column, scretch to left, or stretch to right
+					if(elPos%that.appsPerRow == 4){
+						var nth = counter-i;
+					}else{
+						nth = counter+i;
+					}
+					
+					// the apps which is right under the app(whose widget is opening) move one block less downward 
+					if(icons[nth-1] && (nth != elPos)){
+						if(nth%that.appsPerRow == remainder){
+							icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*(widgetSize.height-1))+"%";
+							that.moveQueue(nth, nth+(widgetSize.height-1)*that.appsPerRow);
+						}
+						else{
+							icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*widgetSize.height)+"%";
+							that.moveQueue(nth, nth+widgetSize.height*that.appsPerRow);
+						}
+					}
 				}
-				
-				// the apps which is right under the app(whose widget is opening) move one block less downward 
-				if(icons[nth-1] && (nth != elPos)){
-					if(nth%this.appsPerRow == remainder){
-						icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*(widgetSize.height-1))+"%";
-						this.moveQueue(nth, nth+(widgetSize.height-1)*this.appsPerRow);
-					}
-					else{
-						icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*widgetSize.height)+"%";
-						this.moveQueue(nth, nth+widgetSize.height*this.appsPerRow);
-					}
+				counter -= that.appsPerRow;
+			}
+		}
+		
+		// calculate where to display the widget
+		// level 1: the element is in the first row or not
+		if(elPos > 4){
+			// level 2: the element is in the 1st column or the 4th column or the other two columns.
+			if(remainder == 1){
+				if((!icons[elPos-1-4]) && (!icons[elPos-4]) && (!icons[elPos])){
+					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
+					this.moveQueue(elPos, elPos-4);
+				}else{
+					down();
 				}
 			}
-			counter -= this.appsPerRow;
+			else if(remainder == 0){
+				if((!icons[elPos-1-4]) && (!icons[elPos-1-5]) && (!icons[elPos-1-1])){
+					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
+					icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
+					this.moveQueue(elPos, elPos-5);
+				}
+				else{
+					down();
+				}
+			}
+			else{
+				var str = "";
+				if(icons[elPos+3])
+					str += '1';
+				else 
+					str += '0';
+				if(icons[elPos+4])
+					str += '1';
+				else 
+					str += '0';
+				if(icons[elPos])
+					str += '1';
+				else
+					str += '0';
+				if(icons[elPos-4])
+					str += '1';
+				else
+					str += '0';
+				if(icons[elPos-5])
+					str += '1';
+				else 
+					str += '0';
+				if(icons[elPos-6])
+					str += '1';
+				else
+					str += '0';
+				if(icons[elPos-2])
+					str += '1';
+				else
+					str += '0';
+				if(icons[elPos+2])
+					str += '1';
+				else
+					str += '0';
+				//make a circle, from head to tail.
+				str += str[0];
+				
+				// level 3: can yield to top blank spaces or not?
+				if(str.substr(2,3) === "000"){
+					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
+					this.moveQueue(elPos, elPos-4);
+				}
+				else if(str.substr(4,3) === "000"){
+					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
+					icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
+					this.moveQueue(elPos, elPos-5);
+				}
+				else{
+					// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
+					if(str.substr(0,3).match(/0/ig).length>str.substr(6,3).match(/0/ig).length){
+						icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
+						this.moveQueue(elPos, elPos-1);
+						down();
+					}
+					else{
+						down();
+					}
+				}
+			}		
+		}
+		else{
+			down();
 		}
 		// log the new queue of apps.
 		this.queue = icons;
@@ -879,7 +966,7 @@
 		}
 	});
 	
-	//add an public API, which can be used as addEventListener.
+	//add some assistance APIs: event listener, event dispatcher.
 	base.fn.extend({
 		listen: function(node, event, func, bool){
 			try{
@@ -893,6 +980,12 @@
 			catch(error){
 				console.log(error);
 			}
+		},
+		fire: function(element, event){
+			var e = document.createEvent("Events");
+			e.initEvent(event, true, true);
+			e.target = element;
+			element.dispatchEvent(e);
 		}
 	});
 	//some apps get widgets, so this is the way manage them.
@@ -1111,15 +1204,16 @@
 			var key = this.target.id;
 			var that = this;
 			var widget = this.widgets[key];
-			var openNode = document.getElementById(widget.open.node);
-			var closeNode = document.getElementById(widget.close.node);
-			
-			// find the new location for widget according to its app's location.
-			widget.widget.style.top = this.target.style.top;
-			widget.widget.style.left = this.target.style.left;
-			
-			//restore the open event and close event to the app& widget.
+			// if the target app has a widget, restore open/close event to the widget.
 			if(widget){
+				var openNode = document.getElementById(widget.open.node);
+				var closeNode = document.getElementById(widget.close.node);
+				
+				// find the new location for widget according to its app's location.
+				widget.widget.style.top = this.target.style.top;
+				widget.widget.style.left = this.target.style.left;
+				
+				//restore the open event and close event to the app& widget.			
 				openNode.addEventListener("dbclick", function(e){
 					for(var j=0; j<that.queue.length; j++){
 						if(that.queue[j] && that.queue[j].id === key){
