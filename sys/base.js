@@ -454,6 +454,7 @@
 				this.css3move(this.container, des, 100);
 				moveBG(this.isBGMovable, des);
 				this.sideBar(false);
+				this.movedDistance = 0;
 			}			
 		},
 		// sometimes touchcancel when you move out of the screen.
@@ -553,7 +554,7 @@
 			base.prototype.yield.block14 // means block 1*4 widget's yield method.
 			and so on.
 	*/
-	yield.block13 = function(elPos, widgetSize, direction){
+	yield.block22 = function(elPos, widgetSize, direction){
 		var icons = this.queue;
 		var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
 		var remainder = elPos%this.appsPerRow;
@@ -666,7 +667,8 @@
 				}
 				else{
 					// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
-					if(str.substr(0,3).match(/0/ig).length>str.substr(6,3).match(/0/ig).length){
+					// str.substr(*, *) + '0' avoids the match function returns null.
+					if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
 						icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
 						this.moveQueue(elPos, elPos-1);
 						down();
