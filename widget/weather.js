@@ -74,8 +74,8 @@
 				func: disapear
 			},
 			size: {
-				width: 3,
-				height: 1
+				width: 2,
+				height: 2
 			}
 		}
 	});

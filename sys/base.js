@@ -37,7 +37,7 @@
 		return result;
 	}
 	
-	//add a API debug, for logging info
+	// add a API debug, for logging info
 	// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
 	var debug = function(){
 		try{
@@ -536,12 +536,12 @@
 		if(widgetSize && elPos>0){
 			if(widgetSize.width == 2 && widgetSize.width == 2){
 				//use the block** function , but switch the context to the global system.
-				this.yield.block22.call(this, elPos, widgetSize, direction);
+				this.yield.block22.apply(this, arguments);
 			}
 			else if(widgetSize.width == 4 && widgetSize.height == 1){
-				this.yield.block14.call(this, elPos, widgetSize, direction);
+				this.yield.block14.apply(this, arguments);
 			}else if(widgetSize.width == 3 && widgetSize.height == 1){
-				this.yield.block13.call(this, elPos, widgetSize, direction);
+				this.yield.block13.apply(this, arguments);
 			}
 		}
 	}
@@ -583,11 +583,9 @@
 					// the apps which is right under the app(whose widget is opening) move one block less downward 
 					if(icons[nth-1] && (nth != elPos)){
 						if(nth%that.appsPerRow == remainder){
-							icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*(widgetSize.height-1))+"%";
 							that.moveQueue(nth, nth+(widgetSize.height-1)*that.appsPerRow);
 						}
 						else{
-							icons[nth-1].style.top = (toNum(icons[nth-1].style.top)+lineHeight*widgetSize.height)+"%";
 							that.moveQueue(nth, nth+widgetSize.height*that.appsPerRow);
 						}
 					}
@@ -602,7 +600,6 @@
 			// level 2: the element is in the 1st column or the 4th column or the other two columns.
 			if(remainder == 1){
 				if((!icons[elPos-1-4]) && (!icons[elPos-4]) && (!icons[elPos])){
-					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
 					this.moveQueue(elPos, elPos-4);
 				}else{
 					down();
@@ -610,8 +607,6 @@
 			}
 			else if(remainder == 0){
 				if((!icons[elPos-1-4]) && (!icons[elPos-1-5]) && (!icons[elPos-1-1])){
-					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
-					icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
 					this.moveQueue(elPos, elPos-5);
 				}
 				else{
@@ -657,27 +652,27 @@
 				
 				// level 3: can yield to top blank spaces or not?
 				if(str.substr(2,3) === "000"){
-					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
 					this.moveQueue(elPos, elPos-4);
+					debug("right top blank");
 				}
 				else if(str.substr(4,3) === "000"){
-					icons[elPos-1].style.top = toNum(icons[elPos-1].style.top) - lineHeight*(widgetSize.height-1) + "%";
-					icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
 					this.moveQueue(elPos, elPos-5);
+					debug("left top blank");
 				}
 				else{
 					// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
 					// str.substr(*, *) + '0' avoids the match function returns null.
 					if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
-						icons[elPos-1].style.left = toNum(icons[elPos-1].style.left) - lineHeight*(widgetSize.width-1) + "%";
 						this.moveQueue(elPos, elPos-1);
+						debug("right down blank");
 						down();
 					}
 					else{
+						debug("left down blank");
 						down();
 					}
 				}
-			}		
+			}	
 		}
 		else{
 			down();
@@ -687,6 +682,9 @@
 	};
 	yield.block14 = function(){
 		
+	};
+	yield.block13 = function(){
+	
 	};
 	
 	base.fn.extend({yield:yield});
@@ -746,7 +744,7 @@
 				target.style.webkitAnimationName= "shake";
 				target.style.webkitAnimationTimingFunction="ease";
 				target.style.webkitAnimationIterationCount= "infinite";
-				target.style.zIndex = "10";
+				target.style.zIndex = "9";
 				this.isDragging = true;
 				this.target = target;
 				// fires an drag event.
@@ -765,8 +763,8 @@
 				return ;
 			}				
 			var that = this;
-			var pagex = e.touches[0].pageX;
-			var pagey = e.touches[0].pageY;			
+			var pagex = this.endX = e.touches[0].pageX;
+			var pagey = this.endY = e.touches[0].pageY;			
 			var iconHeight = this.iconHeight;
 			var iconWidth = this.iconWidth;			
 			/*
@@ -783,10 +781,14 @@
 				}else{
 					this.target.style.left = (pagex-iconWidth/2)+ "px";
 					this.target.style.top  = (pagey-iconHeight/2)+this.currentRowIndex*iconHeight + "px";
+					if(this.targetMem){
+						this.targetMem.style.left = (pagex-iconWidth/2) + "px";
+						this.targetMem.style.top  = (pagey-iconHeight/2) - iconHeight*this.appsPerColumn+ "px";
+					}
 				}
 			}
 			row = row||1;
-			if(this.actionIn || row>4){
+			if(row>4){
 				this.to = false;
 			}else{
 				row += this.currentRowIndex;
@@ -816,9 +818,7 @@
 					clearTimeout(this.timeout);
 					// only move the app into the tray once. deny the other request.
 					if(!that.actionIn){
-						this.timeout = setTimeout(function(){
-							that.moveInTray();
-						}, 1000);
+						that.moveInTray();
 					}
 				}
 				else{
@@ -840,8 +840,9 @@
 					this.from = j+1;
 			}
 			if(this.actionIn){
-				this.endToIn();
-			}else if(this.actionOut){
+				this.endToIn(this.endY);
+			}
+			else if(this.actionOut){
 				if(!this.queue[this.to-1]){
 					this.moveOutTray();
 					this.endToOut(true);
@@ -855,22 +856,6 @@
 					var des = this.to-1;
 					// drag within one page.
 					if(this.rowIndexMem == this.currentRowIndex){
-						if(this.isVertical){
-							this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-							this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-							if(this.queue[des]){
-								this.queue[des].style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
-								this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";							
-							}
-						}
-						else{
-							this.target.style.left = (des%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
-							this.target.style.top = Math.floor(des/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
-							if(this.queue[des]){
-								this.queue[des].style.left = ((from-1)%this.appsPerRow)*100/(this.pagesCount*this.appsPerRow)+"%";
-								this.queue[des].style.top = Math.floor((from-1)/this.appsPerColumn)*(100/this.appsPerColumn)+"%";
-							}
-						}
 						this.switchQueue(from, this.to);
 					}else{
 						// drag to next page: if the desination gets an app,you are denied, else ok.
@@ -878,8 +863,6 @@
 							this.target.style.left = ((from-1)%this.appsPerRow)*(100/this.appsPerRow)+"%";
 							this.target.style.top = Math.floor((from-1)/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 						}else{
-							this.target.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-							this.target.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 							this.moveQueue(from, this.to);
 						}
 					}
@@ -901,15 +884,25 @@
 		//the following three functions work for managing the queue of all apps.
 		switchQueue: function(from, to){
 			if(from != to){
-				var tmp = this.queue[to-1];
-				this.queue[to-1] = this.queue[from-1];			
-				this.queue[from-1] = tmp;
+				var nthF = from-1, nthT = to-1;
+				this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
+				this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+				if(this.queue[nthT]){
+					this.queue[nthT].style.left = (nthF%this.appsPerRow)*(100/this.appsPerRow)+"%";
+					this.queue[nthT].style.top = Math.floor(nthF/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+				}
+				var tmp = this.queue[nthT];
+				this.queue[nthT] = this.queue[nthF];			
+				this.queue[nthF] = tmp;					
 			}
 		},
 		moveQueue: function(from, to){
 			if(from != to){
-				this.queue[to-1] = this.queue[from-1];
-				this.queue[from-1] = undefined;
+				var nthF = from-1, nthT = to-1;				
+				this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
+				this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+				this.queue[nthT] = this.queue[nthF];
+				this.queue[nthF] = undefined;
 			}
 		},
 		delQueue: function(from){
@@ -964,6 +957,7 @@
 			}
 			this.iconWidth = icons[i].clientWidth;
 			this.iconHeight = icons[i].clientHeight;
+			debug(this.iconWidth, "           ", this.iconHeight);
 			return true;
 		}
 	});
@@ -1121,12 +1115,12 @@
 			var div = document.createElement("div");
 			div.style.width = "100%";
 			div.style.height = "16%";
-			div.style.position = "fixed";
+			div.style.position = "absolute";
 			div.style.bottom = "0";
 			div.style.left = "0";
 			div.style.backgroundColor = "black";
 			div.style.opacity = "0.6";
-			div.style.borderTop = "1px solid #F0FFF0"
+			div.style.borderTop = "1px solid #F0FFF0";
 			div.id = "tray";
 			this.tray = div;
 			document.body.appendChild(div);		
@@ -1141,11 +1135,20 @@
 				this.arrange();
 			}
 		},
-		endToIn: function(){
-			this.delQueue(this.from);
-			this.container.removeChild(this.target);
-			this.target = this.targetMem;
+		endToIn: function(pagey){
+			if(pagey>=this.iconHeight*4){
+				this.delQueue(this.from);
+				this.container.removeChild(this.target);
+				this.target = this.targetMem;
+			}else{
+				var nth = this.to -1;
+				this.switchQueue(this.from, this.to);
+				this.tray.removeChild(this.targetMem);
+				this.target.style.display = "block";
+			}
+			this.targetMem = null;
 			this.actionIn = false;
+			this.arrange();
 		},
 		checkFull: function(){
 			var icons = this.tray.getElementsByClassName("icon");
