@@ -483,7 +483,7 @@
 					}
 				}, 400);
 			}
-			this.lastClickTime = now;			
+			this.lastClickTime = now;
 		},				
 		//switch the pages up/down.
 		slideToPage: function(inc, time){
@@ -511,7 +511,12 @@
 			el.style.webkitBackfaceVisiblity = 'hidden';
 			el.style.webkitTransformStyle = 'preserve-3d';
 			el.style.webkitTransitionTimingFunction = 'cubic-bezier(0.33,0.66,0.66,1)';
-		},		
+		},
+		addPage: function(amount){
+			this.pagesCount += amount;
+			this.pagesCount = this.pagesCount || 1;
+			this.styleApp();
+		},
 		//notifacation releated issues.
 		notify: function(){
 			
@@ -816,8 +821,9 @@
 				}
 				else if(pagey>=iconHeight*4){
 					clearTimeout(this.timeout);
-					// only move the app into the tray once. deny the other request.
-					if(!that.actionIn){
+					// !that.actionIn : only move the app into the tray once. deny the other request.
+					// !that.actionOut: the target app node is not in the tray
+					if((!that.actionOut) && (!that.actionIn)){
 						that.moveInTray();
 					}
 				}
