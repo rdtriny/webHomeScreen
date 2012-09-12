@@ -561,11 +561,8 @@
 	*/
 	yield.block22 = function(elPos, widgetSize, direction){
 		var icons = this.queue;
-		var lineHeight = 100/(this.appsPerColumn*this.pagesCount);
+		var lineHeight = 100/(this.appsPerColumn*this.pagesCount);		
 		var remainder = elPos%this.appsPerRow;
-		// Assume every row gets 4 apps but 1 or 2 or 3 apps.
-		var counter = this.appsCount - this.appsCount%this.appsPerRow + remainder;
-		
 		/*
 			push the applications which block widget's space downward.
 			according to the widget's width, make a tiny loop each line
@@ -576,106 +573,117 @@
 		// why use that for this?
 		// a function of an object was called , the object was passed to the function as 'this', if the object can't be identified, window was passed like the following function.
 		function down(){
-			while(counter >= elPos){
-				for(var i=0; i<widgetSize.width; i++){
-					// if the widget is 2*2 and its app is in the 4th column, scretch to left, or stretch to right
-					if(elPos%that.appsPerRow == 4){
-						var nth = counter-i;
-					}else{
-						nth = counter+i;
+			var vSpace,spaceCount=0;
+			var pos;
+			for(var i=0; i<widgetSize.width; i++){
+				// the state when i equals to 0
+				if(!i){
+					vSpace = widgetSize.height - 1;
+					pos = elPos+that.appsPerRow;
+					while(spaceCount<vSpace){
+						if(!icons[pos-1]){
+							spaceCount ++;
+						}
+						pos += that.appsPerRow;
 					}
-					
-					// the apps which is right under the app(whose widget is opening) move one block less downward 
-					if(icons[nth-1] && (nth != elPos)){
-						if(nth%that.appsPerRow == remainder){
-							that.moveQueue(nth, nth+(widgetSize.height-1)*that.appsPerRow);
+					spaceCount = 0;
+					pos -= that.appsPerRow;
+					while(pos>elPos){
+						if(icons[pos-1]){
+							that.moveQueue(pos, pos+spaceCount*that.appsPerRow);
 						}
 						else{
-							that.moveQueue(nth, nth+widgetSize.height*that.appsPerRow);
+							spaceCount ++;
 						}
+						debug(spaceCount, pos);
+						pos -= that.appsPerRow;
 					}
 				}
-				counter -= that.appsPerRow;
+				else{
+					pos = elPos + i;
+					vSpace = widgetSize.height;
+					while(spaceCount<vSpace){
+						if(!icons[pos-1]){
+							spaceCount ++;
+						}
+						pos += that.appsPerRow;
+					}
+					spaceCount = 0;
+					pos -= that.appsPerRow;
+					while(pos>elPos){
+						if(icons[pos-1]){
+							that.moveQueue(pos, pos+spaceCount*that.appsPerRow);
+						}
+						else{
+							spaceCount ++;
+						}											
+						debug(spaceCount, pos);
+						pos -= that.appsPerRow;	
+					}
+				}
+				spaceCount = 0;
 			}
-		}
-		
+		}		
 		// calculate where to display the widget
 		// level 1: the element is in the first row or not
 		if(elPos > 4){
 			// level 2: the element is in the 1st column or the 4th column or the other two columns.
-			if(remainder == 1){
-				if((!icons[elPos-1-4]) && (!icons[elPos-4]) && (!icons[elPos])){
-					this.moveQueue(elPos, elPos-4);
-				}else{
-					down();
-				}
+			var str = "";
+			if(icons[elPos+3])
+				str += '1';
+			else 
+				str += '0';
+			if(icons[elPos+4])
+				str += '1';
+			else 
+				str += '0';
+			if(icons[elPos])
+				str += '1';
+			else
+				str += '0';
+			if(icons[elPos-4])
+				str += '1';
+			else
+				str += '0';
+			if(icons[elPos-5])
+				str += '1';
+			else 
+				str += '0';
+			if(icons[elPos-6])
+				str += '1';
+			else
+				str += '0';
+			if(icons[elPos-2])
+				str += '1';
+			else
+				str += '0';
+			if(icons[elPos+2])
+				str += '1';
+			else
+				str += '0';
+			//make a circle, from head to tail.
+			str += str[0];
+			
+			// level 3: can yield to top blank spaces or not?
+			if(str.substr(2,3) === "000" && remainder!=0){
+				this.moveQueue(elPos, elPos-4);
+				debug("right top blank");
 			}
-			else if(remainder == 0){
-				if((!icons[elPos-1-4]) && (!icons[elPos-1-5]) && (!icons[elPos-1-1])){
-					this.moveQueue(elPos, elPos-5);
-				}
-				else{
-					down();
-				}
+			else if(str.substr(4,3) === "000" && remainder!=1){
+				this.moveQueue(elPos, elPos-5);
+				debug("left top blank");
 			}
 			else{
-				var str = "";
-				if(icons[elPos+3])
-					str += '1';
-				else 
-					str += '0';
-				if(icons[elPos+4])
-					str += '1';
-				else 
-					str += '0';
-				if(icons[elPos])
-					str += '1';
-				else
-					str += '0';
-				if(icons[elPos-4])
-					str += '1';
-				else
-					str += '0';
-				if(icons[elPos-5])
-					str += '1';
-				else 
-					str += '0';
-				if(icons[elPos-6])
-					str += '1';
-				else
-					str += '0';
-				if(icons[elPos-2])
-					str += '1';
-				else
-					str += '0';
-				if(icons[elPos+2])
-					str += '1';
-				else
-					str += '0';
-				//make a circle, from head to tail.
-				str += str[0];
-				
-				// level 3: can yield to top blank spaces or not?
-				if(str.substr(2,3) === "000"){
-					this.moveQueue(elPos, elPos-4);
-					debug("right top blank");
+				// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
+				// str.substr(*, *) + '0' avoids the match function returns null.
+				if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length && remainder!=0){
+					this.moveQueue(elPos, elPos-1);
+					debug("right down blank");
+					down();
 				}
-				else if(str.substr(4,3) === "000"){
-					this.moveQueue(elPos, elPos-5);
-					debug("left top blank");
-				}
-				else{
-					// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
-					// str.substr(*, *) + '0' avoids the match function returns null.
-					if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
-						this.moveQueue(elPos, elPos-1);
-						debug("right down blank");
-						down();
-					}
-					else{
-						debug("left down blank");
-						down();
-					}
+				else if(remainder!=1){
+					debug("left down blank");
+					down();
 				}
 			}	
 		}
@@ -888,11 +896,11 @@
 			this.from = false;
 		},
 		//the following three functions work for managing the queue of all apps.
-		switchQueue: function(from, to){
+		switchQueue: function(from, to){		
+			var nthF = from-1, nthT = to-1;
+			this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
+			this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 			if(from != to){
-				var nthF = from-1, nthT = to-1;
-				this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
-				this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 				if(this.queue[nthT]){
 					this.queue[nthT].style.left = (nthF%this.appsPerRow)*(100/this.appsPerRow)+"%";
 					this.queue[nthT].style.top = Math.floor(nthF/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
@@ -902,11 +910,11 @@
 				this.queue[nthF] = tmp;					
 			}
 		},
-		moveQueue: function(from, to){
+		moveQueue: function(from, to){		
+			var nthF = from-1, nthT = to-1;				
+			this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
+			this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 			if(from != to){
-				var nthF = from-1, nthT = to-1;				
-				this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
-				this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 				this.queue[nthT] = this.queue[nthF];
 				this.queue[nthF] = undefined;
 			}
@@ -963,7 +971,6 @@
 			}
 			this.iconWidth = icons[i].clientWidth;
 			this.iconHeight = icons[i].clientHeight;
-			debug(this.iconWidth, "           ", this.iconHeight);
 			return true;
 		}
 	});
@@ -1194,6 +1201,7 @@
 				this.target.style.height = 100/(this.pagesCount*this.appsPerColumn) + "%";
 				this.target.style.width = "25%";				
 			}
+			this.targetMem = null;
 			this.arrange();
 			this.actionOut = false;
 			this.restoreEvent();
