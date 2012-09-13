@@ -560,68 +560,8 @@
 			and so on.
 	*/
 	yield.block22 = function(elPos, widgetSize, direction){
-		var icons = this.queue;
-		var lineHeight = 100/(this.appsPerColumn*this.pagesCount);		
+		var icons = this.queue;	
 		var remainder = elPos%this.appsPerRow;
-		/*
-			push the applications which block widget's space downward.
-			according to the widget's width, make a tiny loop each line
-			according to the widget's height, calculate the vertical distance to move.
-			from back to forth
-		*/
-		var that = this;
-		// why use that for this?
-		// a function of an object was called , the object was passed to the function as 'this', if the object can't be identified, window was passed like the following function.
-		function down(){
-			var vSpace,spaceCount=0;
-			var pos;
-			for(var i=0; i<widgetSize.width; i++){
-				// the state when i equals to 0
-				if(!i){
-					vSpace = widgetSize.height - 1;
-					pos = elPos+that.appsPerRow;
-					while(spaceCount<vSpace){
-						if(!icons[pos-1]){
-							spaceCount ++;
-						}
-						pos += that.appsPerRow;
-					}
-					spaceCount = 0;
-					pos -= that.appsPerRow;
-					while(pos>elPos){
-						if(icons[pos-1]){
-							that.moveQueue(pos, pos+spaceCount*that.appsPerRow);
-						}
-						else{
-							spaceCount ++;
-						}
-						pos -= that.appsPerRow;
-					}
-				}
-				else{
-					pos = elPos + i;
-					vSpace = widgetSize.height;
-					while(spaceCount<vSpace){
-						if(!icons[pos-1]){
-							spaceCount ++;
-						}
-						pos += that.appsPerRow;
-					}
-					spaceCount = 0;
-					pos -= that.appsPerRow;
-					while(pos>elPos){
-						if(icons[pos-1]){
-							that.moveQueue(pos, pos+spaceCount*that.appsPerRow);
-						}
-						else{
-							spaceCount ++;
-						}
-						pos -= that.appsPerRow;	
-					}
-				}
-				spaceCount = 0;
-			}
-		}		
 		// calculate where to display the widget
 		// level 1: the element is in the first row or not
 		if(elPos > 4){
@@ -682,23 +622,90 @@
 					if(remainder != 1){
 						this.moveQueue(elPos, elPos-1);
 						debug("right down blank");
-						down();
+						icons = down(this, icons, elPos, widgetSize) || icons;
 					}
 				}
 				else{
 					if(remainder!=0){
 						debug("left down blank");
-						down();
+						icons = down(this, icons, elPos, widgetSize) || icons;
 					}
 				}
-			}	
+			}
 		}
 		else{
-			down();
+			icons = down(this, icons, elPos, widgetSize) || icons;
 		}
 		// log the new queue of apps.
 		this.queue = icons;
 	};
+	
+	/*
+		push the applications which block widget's space downward.
+		according to the widget's width, make a tiny loop each line
+		according to the widget's height, calculate the vertical distance to move.
+		from back to forth
+	*/
+	// a function of an object was called , the object was passed to the function as 'this', if the object can't be identified, window was passed just as the following function.
+	function down(that, icons, elPos, widgetSize){
+		if(!icons){
+			return false;
+		}
+		var vSpace,spaceCount=0;
+		var pos;
+		// if the app is in the 4th column, then stretch to right.
+		if(elPos % that.appsPerRow == 0){			
+			that.switchQueue(elPos, elPos-1);
+			elPos -= 1;
+		}
+		for(var i=0; i<widgetSize.width; i++){
+			// the state when i equals to 0
+			if(!i){
+				vSpace = widgetSize.height - 1;
+				pos = elPos+that.appsPerRow;
+				while(spaceCount<vSpace){
+					if(!icons[pos-1]){
+						spaceCount ++;
+					}
+					pos += that.appsPerRow;
+				}
+				spaceCount = 0;
+				pos -= that.appsPerRow;
+				while(pos>elPos){
+					if(icons[pos-1]){
+						that.moveQueue(pos, pos+spaceCount*that.appsPerRow);
+					}
+					else{
+						spaceCount ++;
+					}
+					pos -= that.appsPerRow;
+				}
+			}
+			else{
+				pos = elPos + i;
+				vSpace = widgetSize.height;
+				while(spaceCount<vSpace){
+					if(!icons[pos-1]){
+						spaceCount ++;
+					}
+					pos += that.appsPerRow;
+				}
+				spaceCount = 0;
+				pos -= that.appsPerRow;
+				while(pos>elPos){
+					if(icons[pos-1]){
+						that.moveQueue(pos, pos+spaceCount*that.appsPerRow);
+					}
+					else{
+						spaceCount ++;
+					}
+					pos -= that.appsPerRow;	
+				}
+			}
+			spaceCount = 0;
+		}
+		return icons;
+	}
 	yield.block14 = function(){
 		
 	};
