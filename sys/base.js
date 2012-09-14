@@ -164,8 +164,8 @@
 		iconHeight: 0,
 		run: function(){
 			// keep trying to get all resources until success.			
-			var that = this;
-			var index = setInterval(function(){
+			var that = this;		
+			var index = setInterval(function(){					
 				var apps = that.loadRes();
 				var len = apps.length;
 				that.init();
@@ -1315,7 +1315,9 @@
 	base.fn.extend({
 		ajax:function(url, callback){
 			var xmlhttp = new XMLHttpRequest();
-			var that = this;
+			var that = this;			
+			xmlhttp.open('GET', url, true);
+			xmlhttp.send();
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
 					try{
@@ -1337,8 +1339,6 @@
 					}
 				}
 			};
-			xmlhttp.open('GET', url, true);
-			xmlhttp.send();
 		},
 		getResponseStr: function(str){			
 			console.log(str);
@@ -1354,6 +1354,9 @@
 				bool = isAsy;
 			else
 				bool = true;
+			
+			xmlhttp.open('GET', url, bool);
+			xmlhttp.send();
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
 					try{
@@ -1375,8 +1378,6 @@
 					}
 				}
 			}
-			xmlhttp.open('GET', url, bool);
-			xmlhttp.send();
 		},
 		post: function(url, callback, queryStr, isAsy){
 			var xmlhttp = new XMLHttpRequest(), bool;
@@ -1390,6 +1391,8 @@
 			else if(typeof queryStr == "string")
 				data = queryStr;
 			
+			xmlhttp.open('POST', url, bool);
+			xmlhttp.send(data);
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
 					try{
@@ -1411,8 +1414,6 @@
 					}
 				}
 			};
-			xmlhttp.open('POST', url, bool);
-			xmlhttp.send(data);
 		}
 	});
 	
