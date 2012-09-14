@@ -212,7 +212,7 @@
 			this.appsCount ++;
 			var appNode = this.createAppNode(app);
 			if(app.widget){
-				this.addWidget(app.widget ,appNode);
+				this.require(app.widget);
 				appNode.setAttribute("isWidget", "true");
 			}
 			this.queue.push(appNode);
@@ -1028,7 +1028,7 @@
 	//some apps get widgets, so this is the way manage them.
 	base.fn.extend({
 		widgets: {},
-		addWidget: function(widget, el){
+		require: function(widget){
 			var wdt = document.createElement("script");
 			wdt.src = widget;
 			wdt.type= "text/javascript";
@@ -1391,7 +1391,8 @@
 			else if(typeof queryStr == "string")
 				data = queryStr;
 			
-			xmlhttp.open('POST', url, bool);
+			xmlhttp.open('POST', url, bool);			
+			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 			xmlhttp.send(data);
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
