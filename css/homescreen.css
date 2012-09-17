@@ -44,7 +44,9 @@
 	padding: 0;
 	margin: 0;
 	overflow: hidden;
-	-webkit-transition-duration: 0.1s;	
+	-webkit-transition-duration: 0s;
+	/* the following property is quite important, prevents flicker, sluggish preformance */
+	-webkit-backface-visibility: hidden;
 	transition-property: opacity;
 	-webkit-transition-timing-function: cubic-bezier(0.33,0.66,0.66,1);
 }
