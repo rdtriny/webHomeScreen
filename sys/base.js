@@ -1,6 +1,6 @@
 ﻿var _Base_ = (function(window, undefined){
 	/*
-		make the following three api can't be access out of the scope.
+		make the following apis can't be access out of the scope.
 	*/	
 	var getAppsList = function(){
 		// Don't use JSON.parse, 'cause chinese characters without slashes cause errors.
@@ -765,11 +765,14 @@
 				}
 			}
 			if(/[A-z0-9]+\./ig.test(target.id)){
+				/* jump up/down when active the app.
 				target.style.webkitTransformOrigin="50% 50%";
 				target.style.webkitAnimationDuration= ".5s";
 				target.style.webkitAnimationName= "shake";
 				target.style.webkitAnimationTimingFunction="ease";
 				target.style.webkitAnimationIterationCount= "infinite";
+				*/
+				target.style.webkitTransform = "scale(1.2)";
 				target.style.zIndex = "9";
 				this.isDragging = true;
 				this.target = target;
@@ -822,7 +825,7 @@
 			}
 			// a green box indicates ok, a red box indicates you can't put application there.
 			this.highlight(iconWidth);
-			
+
 			if(that.isVertical){
 				// decide if user wants to drag to next page or not.
 				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){
@@ -857,9 +860,12 @@
 			clearTimeout(this.timeout);
 			if(!this.isDragging){
 				return ;
-			}else {				
+			}else {
+				/*
 				this.target.style.webkitAnimationName = "";
 				this.target.style.webkitAnimationIterationCount = "";		
+				*/
+				this.target.style.webkitTransform = "";
 				this.highlight(false);
 			}			
 			for(var j=0; j<this.queue.length; j++){
@@ -952,10 +958,6 @@
 		},
 		//show whether the app can be dragged to the target location. red for no, green for yes.
 		highlight: function(sideLen){
-			if(sideLen === false && this.highlightBox){
-				this.highlightBox.style.display = "none";
-				return "closed";
-			}
 			if(!this.highlightBox){
 				var div = document.createElement("div");
 				div.style.height = sideLen*0.66 + "px";
@@ -966,25 +968,23 @@
 				div.style.display = "none";
 				this.container.appendChild(div);
 				this.highlightBox = div;
-			}else{
+			}else if(sideLen !== false){
 				var des = this.to - 1;
-				this.highlightBox.style.display = "block";
-				if(this.rowIndexMem == this.currentRowIndex && (!this.actionOut)){
-					this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-					this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
-					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
-				}
-				else{
+				this.highlightBox.style.display = "block";				
+				this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
+				this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+				if(this.actionOut || this.rowIndexMem != this.currentRowIndex){
 					if(this.queue[des]){
-						this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-						this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
 						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px red";
-					}else{						
-						this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
-						this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
+					}else{
 						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
 					}
+				}else{
+					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
 				}
+			}else{
+				this.highlightBox.style.display = "none";
+				return "closed";
 			}
 		},
 		//find the app area's height and width
