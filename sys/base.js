@@ -2,10 +2,13 @@
 	/*
 		make the following apis can't be access out of the scope.
 	*/	
-	var getAppsList = function(){
-		// Don't use JSON.parse, 'cause chinese characters without slashes cause errors.
-		return eval(window.nativeapps.getAppsListInJson());
+	
+	// regListener is used to add a callback function to native, when apps are ready, native code will call callback, and pass
+	// the app list JSON.
+	var regListener = function(callbackName){
+		window.nativeapps.setWebUpdateContentCallback(callbackName);
 	};
+	
 	var getDefaultIconUri = function(){
 		// If the icons aren't prepared, use a default icon.
 		return window.nativeapps.getDefaultAppIconUri();
@@ -163,25 +166,14 @@
 		iconWidth: 0,
 		iconHeight: 0,
 		run: function(){
-			// keep trying to get all resources until success.			
-			var that = this;		
-			var index = setInterval(function(){					
-				var apps = that.loadRes();
-				var len = apps.length;
-				that.init();
-				if(apps[len-1].iconUri && apps[len-1].label){
-					clearInterval(index);
-				}
-			}, 1000);						
+			// this is the callback function when init. native code can only access the properties of window.
+			window.loadRes = this.loadRes.bind(this);
+			regListener("loadRes");					
 		},
 		// parse the applications' JSON info and then register them.
-		loadRes: function(){
-			this.queue = [];
-			this.appsCount = 0;
-			this.pagesCount = 0;
-			this.container.innerHTML = "";	 	//removeAllChild(this.container); //both methods are ok.
+		loadRes: function(appListJson, lastBatch){
 			var apps, defaultUri = getDefaultIconUri();
-			apps = getAppsList();
+			apps = eval(appListJson);
 			var len = apps.length;
 			var icon, label;
 			for (var i = 0; i < apps.length; i++){
@@ -195,7 +187,7 @@
 				else
 					this.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});
 			}
-			return apps;
+			this.init();
 		},
 		init: function(){
 			var appNode = false;
@@ -969,7 +961,7 @@
 				this.container.appendChild(div);
 				this.highlightBox = div;
 			}else if(sideLen !== false){
-				var des = this.to - 1;
+				var des = this.to - 1, i;
 				this.highlightBox.style.display = "block";				
 				this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 				this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
@@ -977,10 +969,24 @@
 					if(this.queue[des]){
 						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px red";
 					}else{
-						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
+						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";												
+						//this.moveQueue(this.from, this.to);
 					}
 				}else{
 					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
+					/*if(parseInt(this.to/this.appsPerRow, 10) == parseInt(this.from/this.appsPerRow, 10)){
+						for(i=this.from+1; i<des; i++){
+							this.switchQueue(i, i+1);
+						}
+					}
+					else if(this.to%this.appsPerRow == this.from%this.appsPerRow){						
+						for(i=this.from+1; i<des; i+=this.appsPerRow){
+							this.switchQueue(i, i+this.appsPerRow);
+						}
+					}
+					else{
+						this.switchQueue(this.from, this.to);
+					}*/
 				}
 			}else{
 				this.highlightBox.style.display = "none";
@@ -1199,7 +1205,10 @@
 			var num = icons.length;
 			var spacing = (100-20*num)/(num+1);
 			for(var i=0; i<num; i++){
+				/*
 				icons[i].style.webkitAnimation = "";
+				*/				
+				icons[i].style.webkitTransform = "";
 				icons[i].style.top = "0";
 				icons[i].style.height = "100%";
 				icons[i].style.width = "20%";
@@ -1526,6 +1535,9 @@ var spriteMovie = (function(){
 })();
 
 var system = new _Base_("iconsContainer",{isVertical:true, appsPerRow:4, appsPerColumn:4});
+
+// avoid the 'undefined' error when native code this function.
+function updateContent(){}
 
 window.addEventListener("gestureend", function(){
 	console.log("getsteure");
