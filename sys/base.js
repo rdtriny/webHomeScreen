@@ -1,86 +1,4 @@
-﻿var _Base_ = (function(window, undefined){
-	/*
-		make the following apis can't be access out of the scope.
-	*/	
-	
-	// regListener is used to add a callback function to native, when apps are ready, native code will call callback, and pass
-	// the app list JSON.
-	var regListener = function(callbackName){
-		window.nativeapps.setWebUpdateContentCallback(callbackName);
-	};
-	
-	var getDefaultIconUri = function(){
-		// If the icons aren't prepared, use a default icon.
-		return window.nativeapps.getDefaultAppIconUri();
-	};
-	//identification is like this: com.orange.browser/com.a.b
-	var launchApp = function(identification){
-		// identification stands for the id of appliction div, which is like : com.*.*/com.*.*.*Activity
-		var array = identification.split('/');
-		var pkg = array[0];
-		var cls = array[1];
-		// native interface, two arguments: package name and activity name.
-		window.nativeapps.launchActivity(pkg, cls);
-	};
-	
-	var removeAllChild = function(node){
-		if(typeof node == "object" && node.nodeType == 1){
-			while(node.firstChild){
-				node.removeChild(node.firstChild);
-			}
-		}
-	};
-	
-	// parse to float
-	var toNum = function(arg){
-		var result = parseFloat(arg);
-		if(isNaN(result)){
-			result = 0;
-		}
-		return result;
-	}
-	
-	// add a API debug, for logging info
-	// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
-	var debug = function(){
-		try{
-			var str = debug.concat.apply(this, arguments).slice(0, -1);
-			console.log(str);
-			return str;
-		}
-		catch(error){
-			console.log(error);
-		}
-	};
-	debug.concat = function(){
-		var str="";
-		for(var i=0; i<arguments.length; i++){
-			var type = toString.call(arguments[i]);
-			if(type.indexOf('Object') != -1){
-				str += '{';
-				for(var j in arguments[i]){
-					str += j+':'+debug.concat(arguments[i][j]);
-				}
-				if(str[str.length-1] != '{')
-					str = str.substr(0, str.length-1);
-				str += '},';
-			}
-			else if(type.indexOf('Array') != -1){
-				str += '[';
-				for(var n=0; n<arguments[i].length; n++){
-					str +=  debug.concat(arguments[i][n]);
-				}
-				if(str[str.length-1] != '[')
-				    str = str.substr(0, str.length-1);
-				str +='],';
-			}
-			else{
-				str += arguments[i]+',';				
-			}
-		}
-		return str;
-	}
-	
+var _Base_ = (function(window, undefined){		
 	var base = function(container, config){
 		var that = this;	
 		window.addEventListener('load',function(){
@@ -116,12 +34,140 @@
 			// add the favorite tray area.
 			that.addFixedArea();
 			// some sound effect.
-			that.loadAudio("./mp3.mp3");
+			base.Sound.loadAudio("./mp3.mp3");
 			// launch the system, init all components.
 			that.run();
+			base.Version.showVersion();
 		}, false);
 	};
-	base.prototype = {
+	
+	/*
+		make the following apis can't be access out of the scope.
+	*/	
+	
+	// regListener is used to add a callback function to native, when apps are ready, native code will call callback, and pass
+	// the app list JSON.
+	var regListener = function(callbackName){
+		window.nativeapps.setWebUpdateContentCallback(callbackName);
+	};
+	
+	var getDefaultIconUri = function(){
+		// If the icons aren't prepared, use a default icon.
+		return window.nativeapps.getDefaultAppIconUri();
+	};
+	//identification is like this: com.orange.browser/com.a.b
+	var launchApp = function(identification){
+		// identification stands for the id of appliction div, which is like : com.*.*/com.*.*.*Activity
+		var array = identification.split('/');
+		var pkg = array[0];
+		var cls = array[1];
+		// native interface, two arguments: package name and activity name.
+		window.nativeapps.launchActivity(pkg, cls);
+	};
+	
+	// parse to float
+	var toNum = function(arg){
+		var result = parseFloat(arg);
+		if(isNaN(result)){
+			result = 0;
+		}
+		return result;
+	}
+	
+	//
+	//	a interface which to include properties from other objects.
+	//	example:
+	//		var target = {};
+	//		base.extend(target,{a:1,b:2},{c:[1,2,3]});
+	//	parameters:
+	//		target, the target object which wants to extend more properties.
+	//		(optinal)obj, the object to give target properties.
+	//		 .....
+	//		(optinal)objN, the nth object to give target properties.
+	//
+	base.extend = function(target){
+		var target = arguments[0];
+		if(typeof target != "object"){
+			target = {};
+		}
+		for(var i = 1; i<arguments.length; i++){
+			var options = arguments[i];
+			if(typeof options == "object"){
+				for( var name in options){
+					target[name] = options[name];
+				}
+			}
+		}
+		return target;
+	};
+	
+	//
+	// APIs related to DOM node
+	//
+	// removeAllChild : remove all children of a specified node.
+	// parameters: 
+	//		node ###  the Node whose's children will be removed.
+	// example:
+	// 		base.DOM.remove(document.body);
+	//
+	//
+	
+	base.DOM = base.extend(base.DOM, {			
+		removeAllChild : function(node){
+			if(typeof node == "object" && node.nodeType == 1){
+				while(node.firstChild){
+					node.removeChild(node.firstChild);
+				}
+			}
+		}	
+	});
+	
+	//
+	// add a API debug, for logging info
+	// debug is working for debug the program. Note: don't log large object in deepth like window/document, may exceed the stack size, and get error.
+	//
+	var debug = base.Debug = base.extend(base.Debug, {
+		log : function(){
+				try{
+					var str = base.Debug.stringify.apply(base.Debug, arguments).slice(0, -1);
+					console.log(str);
+					return str;
+				}
+				catch(error){
+					console.log(error);
+				}
+		},	
+		stringify : function(){
+			var str="";
+			for(var i=0; i<arguments.length; i++){
+				var type = toString.call(arguments[i]);
+				if(type.indexOf('Object') != -1){
+					str += '{';
+					for(var j in arguments[i]){
+						str += j+':'+base.Debug.stringify(arguments[i][j]);
+					}
+					if(str[str.length-1] != '{')
+						str = str.substr(0, str.length-1);
+					str += '},';
+				}
+				else if(type.indexOf('Array') != -1){
+					str += '[';
+					for(var n=0; n<arguments[i].length; n++){
+						str +=  base.Debug.stringify(arguments[i][n]);
+					}
+					if(str[str.length-1] != '[')
+						str = str.substr(0, str.length-1);
+					str +='],';
+				}
+				else{
+					str += arguments[i]+',';				
+				}
+			}
+			return str;
+		}
+	});
+
+	base.fn = base.prototype = {
 		// a function which defines the structure of application's div.
 		appStyle: null,
 		// coordinate when you touch the screen.
@@ -165,6 +211,10 @@
 		// height,width of the application div.
 		iconWidth: 0,
 		iconHeight: 0,
+		// the nth number when drag start.
+		from: false,
+		// the nth number when drag move.
+		to: false,
 		run: function(){
 			// this is the callback function when init. native code can only access the properties of window.
 			window.loadRes = this.loadRes.bind(this);
@@ -264,23 +314,6 @@
 		}
 	};
 	
-	base.fn = base.prototype;
-	base.fn.extend = function(){
-		var values = [];
-		if(arguments.length == 1){
-			var target = this;
-			if(typeof arguments[0] == "object"){
-				for( var name in arguments[0]){
-					target[name] = arguments[0][name];
-					values.push(arguments[0][name]);
-				}
-				return values;
-			}
-		}
-	};
-	
-	//extend debug to base.prototype and base itself
-	base.debug = base.fn.extend({debug: debug})[0];
 	// move background image.
 	var moveBG = function(isMovable, coor){
 		if(isMovable && typeof coor.y == 'number'){
@@ -297,7 +330,7 @@
 		}
 	};
 	
-	base.fn.extend({
+	base.extend(base.fn, {
 		touchstart: function(e){
 			// display the sidebar.
 			this.sideBar(true);
@@ -471,7 +504,7 @@
 					if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){						
 						launchApp(target.id);
 						console.log(target.id);
-						that.playAudio(0);
+						base.Sound.playAudio(0);
 					}
 				}, 400);
 			}
@@ -598,13 +631,13 @@
 			if(str.substr(2,3) === "000"){
 				if(remainder == 0){
 					this.moveQueue(elPos, elPos-4);
-					debug("right top blank");
+					debug.log("right top blank");
 				}
 			}
 			else if(str.substr(4,3) === "000"){
 				if(remainder == 1){
 					this.moveQueue(elPos, elPos-5);
-					debug("left top blank");
+					debug.log("left top blank");
 				}
 			}
 			else{
@@ -613,13 +646,13 @@
 				if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
 					if(remainder != 1){
 						this.moveQueue(elPos, elPos-1);
-						debug("right down blank");
+						debug.log("right down blank");
 						icons = down(this, icons, elPos, widgetSize) || icons;
 					}
 				}
 				else{
 					if(remainder!=0){
-						debug("left down blank");
+						debug.log("left down blank");
 						icons = down(this, icons, elPos, widgetSize) || icons;
 					}
 				}
@@ -705,10 +738,10 @@
 	
 	};
 	
-	base.fn.extend({yield:yield});
+	base.extend(base.fn, {yield:yield});
 	
 	// create slidebar, control it.
-	base.fn.extend({
+	base.extend(base.fn, {
 		sideBar: function(isShow){
 			if(!this.sidebar && isShow){
 				var sidebar = document.createElement("div");
@@ -742,7 +775,7 @@
 	});
 	
 	// action definition when drag event fires.
-	base.fn.extend({
+	base.extend(base.fn, {
 		highlightBox: null,
 		dragStart: function(e){
 			var target = e.target;
@@ -776,6 +809,11 @@
 				// fires an drag event.
 				this.initDragEvent(e);	
 			}
+			
+			for(var j=0; j<this.queue.length; j++){
+				if(this.queue[j]&&(this.queue[j].id === this.target.id || this.queue[j].id === this.target.getAttribute("iWidget")))
+					this.from = j+1;
+			}			
 			// if the app moves out of favorite tray, or moves into the favorite , or just in iconContainer.
 			this.isActionOut(target);
 		},
@@ -807,17 +845,7 @@
 						this.targetMem.style.top  = (pagey-iconHeight/2) - iconHeight*this.appsPerColumn+ "px";
 					}
 				}
-			}
-			row = row||1;
-			if(row>4){
-				this.to = false;
-			}else{
-				row += this.currentRowIndex;
-				this.to = (row-1)*4+column;
-			}
-			// a green box indicates ok, a red box indicates you can't put application there.
-			this.highlight(iconWidth);
-
+			}						
 			if(that.isVertical){
 				// decide if user wants to drag to next page or not.
 				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){
@@ -845,11 +873,27 @@
 				}
 				else{
 					clearTimeout(this.timeout);
+					row = row||1;
+					if(row>4){
+						this.to = false;
+					}else{
+						row += this.currentRowIndex;
+						this.to = (row-1)*4+column;
+					}
 				}
+			}			
+			
+			// a green box indicates ok, a red box indicates you can't put application there.
+			if(typeof this.to == "number"){
+				this.highlight(iconWidth);			
+				this.exchangeOnMove(pagey);
+			}else{				
+				this.highlight(false);	
 			}
 		},
 		dragEnd: function(e){
 			clearTimeout(this.timeout);
+			clearTimeout(this.timeout2);
 			if(!this.isDragging){
 				return ;
 			}else {
@@ -860,10 +904,6 @@
 				this.target.style.webkitTransform = "";
 				this.highlight(false);
 			}			
-			for(var j=0; j<this.queue.length; j++){
-				if(this.queue[j]&&(this.queue[j].id === this.target.id || this.queue[j].id === this.target.getAttribute("iWidget")))
-					this.from = j+1;
-			}
 			if(this.actionIn){
 				this.endToIn(this.endY);
 			}
@@ -901,10 +941,11 @@
 			this.isDragging = false;
 			this.to = false;
 			this.from = false;
+			this.toMem = false;
 		},
 		// the following three functions work for managing the queue of all apps.
 		// besides it should be manage the app's position, and the position of widget attached to the app.
-		switchQueue: function(from, to){		
+		switchQueue: function(from, to){
 			var nthF = from-1, nthT = to-1;
 			this.queue[nthF].style.left = (nthT%this.appsPerRow)*(100/this.appsPerRow)+"%";
 			this.queue[nthF].style.top = Math.floor(nthT/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
@@ -949,7 +990,8 @@
 			widget.style.top = top;
 		},
 		//show whether the app can be dragged to the target location. red for no, green for yes.
-		highlight: function(sideLen){
+		highlight: function(sideLen){			
+			var des = this.to - 1, i;
 			if(!this.highlightBox){
 				var div = document.createElement("div");
 				div.style.height = sideLen*0.66 + "px";
@@ -961,7 +1003,6 @@
 				this.container.appendChild(div);
 				this.highlightBox = div;
 			}else if(sideLen !== false){
-				var des = this.to - 1, i;
 				this.highlightBox.style.display = "block";				
 				this.highlightBox.style.left = (des%this.appsPerRow)*(100/this.appsPerRow)+"%";
 				this.highlightBox.style.top = Math.floor(des/this.appsPerColumn)*100/(this.pagesCount*this.appsPerColumn)+"%";
@@ -969,29 +1010,24 @@
 					if(this.queue[des]){
 						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px red";
 					}else{
-						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";												
-						//this.moveQueue(this.from, this.to);
+						this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
 					}
 				}else{
 					this.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
-					/*if(parseInt(this.to/this.appsPerRow, 10) == parseInt(this.from/this.appsPerRow, 10)){
-						for(i=this.from+1; i<des; i++){
-							this.switchQueue(i, i+1);
-						}
-					}
-					else if(this.to%this.appsPerRow == this.from%this.appsPerRow){						
-						for(i=this.from+1; i<des; i+=this.appsPerRow){
-							this.switchQueue(i, i+this.appsPerRow);
-						}
-					}
-					else{
-						this.switchQueue(this.from, this.to);
-					}*/
 				}
 			}else{
 				this.highlightBox.style.display = "none";
 				return "closed";
 			}
+		},
+		exchangeOnMove: function(pagey){
+			clearTimeout(this.timeout2);
+			this.timeout2 = setTimeout(function(){
+				if(!this.actionOut && this.rowIndexMem == this.currentRowIndex && pagey<this.iconHeight*4){
+					this.switchQueue(this.from, this.to);
+					this.from = this.to;
+				}
+			}.bind(this), 300);
 		},
 		//find the app area's height and width
 		calculate: function(){
@@ -1010,7 +1046,7 @@
 	});
 	
 	//add some assistance APIs: event listener, event dispatcher.
-	base.fn.extend({
+	base.extend(base.fn, {
 		listen: function(node, event, func, bool){
 			try{
 				if(typeof node=="object" && node.nodeType ==1 && ['click','dbclick','swipe','longtap','drag','pinch','touchstart','touchmove','touchend','touchcancel'].indexOf(event)!=-1){
@@ -1032,7 +1068,7 @@
 		}
 	});
 	//some apps get widgets, so this is the way manage them.
-	base.fn.extend({
+	base.extend(base.fn, {
 		widgets: {},
 		require: function(widget){
 			var wdt = document.createElement("script");
@@ -1147,7 +1183,7 @@
 	});
 	
 	//logic about the favorite tray. 
-	base.fn.extend({
+	base.extend(base.fn, {
 		tray: null,
 		targetMem: null,
 		actionIn: false,
@@ -1166,23 +1202,25 @@
 			this.tray = div;
 			document.body.appendChild(div);		
 		},
-		moveInTray: function(){			
-			if(!this.checkFull()){
-				var target = this.target.cloneNode(true);
-				this.tray.appendChild(target);
-				this.target.style.display = "none";
-				this.actionIn = true;			
-				this.targetMem = target;
-				this.arrange();
+		moveInTray: function(){
+			var target = this.target.cloneNode(true);
+			target.style.top = "0";
+			target.style.height = "100%";
+			target.style.width = "20%";
+			this.tray.appendChild(target);
+			this.target.style.display = "none";
+			this.actionIn = true;			
+			this.targetMem = target;
+			if(this.checkFull()){
+				this.to = this.from;
 			}
 		},
 		endToIn: function(pagey){
-			if(pagey>=this.iconHeight*4){
+			if(pagey>=this.iconHeight*4 && (!this.checkFull())){
 				this.delQueue(this.from);
 				this.container.removeChild(this.target);
 				this.target = this.targetMem;
 			}else{
-				var nth = this.to -1;
 				this.switchQueue(this.from, this.to);
 				this.tray.removeChild(this.targetMem);
 				this.target.style.display = "block";
@@ -1193,10 +1231,10 @@
 		},
 		checkFull: function(){
 			var icons = this.tray.getElementsByClassName("icon");
-			if(icons.length>4){
-				return true;
-			}else{
+			if(icons.length<6){
 				return false;
+			}else{
+				return true;
 			}
 		},
 		//refresh all apps in the tray.
@@ -1247,7 +1285,7 @@
 				}
 			}
 			catch(error){
-				debug(error);
+				debug.log(error);
 			}
 		},
 		restoreEvent: function(){
@@ -1299,8 +1337,15 @@
 		}
 	});
 	
-	//some sound effect
-	base.fn.extend({
+	//
+	// some sound effect
+	// including some basic process function.
+	// loadAudio: load the music file and init it.
+	// playAudio: play music
+	// pauseAudio: pause the playing music
+	// volumeup/volumedown: control the volume.
+	//
+	base.Sound = base.extend( base.Sound, {
 		audio: [],
 		loadAudio: function(src){
 			var audio = new Audio(src);
@@ -1320,22 +1365,38 @@
 			this.audio[index].volume -= 0.1;
 		}		
 	});
-	//ajax module
-	base.fn.extend({
+	
+	//
+	// a brief version information
+	//
+	
+	base.Version = base.extend( base.Version, {
+		version: '2.1.3 beta',
+		showVersion: function(){
+			base.Debug.log('Version: '+this.version);
+			return this.version;
+		}
+	});
+	
+	// 
+	// Ajax module
+	// containing two main query method, GET and POST
+	// query string in post method are transfered as form-data.
+	//
+	base.Ajax = base.extend(base.Ajax, {
 		ajax:function(url, callback){
-			var xmlhttp = new XMLHttpRequest();
-			var that = this;			
+			var xmlhttp = new XMLHttpRequest();			
 			xmlhttp.open('GET', url, true);
 			xmlhttp.send();
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
 					try{
 						if(xmlhttp.responseXML){
-							that.getResponseXML(xmlhttp.responseXML);
+							this.getResponseXML(xmlhttp.responseXML);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseXML);
 						}else if(xmlhttp.responseText){
-							that.getResponseStr(xmlhttp.responseText);
+							this.getResponseStr(xmlhttp.responseText);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseText);
 						}
@@ -1344,10 +1405,10 @@
 						}
 					}
 					catch(message){
-						debug(message);
+						debug.log(message);
 					}
 				}
-			};
+			}.bind(base.Ajax);
 		},
 		getResponseStr: function(str){			
 			console.log(str);
@@ -1356,25 +1417,25 @@
 			console.log(xml.getElementsByTagName('*')[0].nodeValue);
 		},
 		//the arguments list are lined by their improtance level.
-		get: function(url, callback, isAsy){
+		get: function(url,  queryStr, isAsy, callback){
 			var xmlhttp = new XMLHttpRequest(), bool;
-			var that = this;
 			if(typeof isAsy == "boolean")
 				bool = isAsy;
 			else
 				bool = true;
 			
+			url = url+"?"+queryStr;
 			xmlhttp.open('GET', url, bool);
 			xmlhttp.send();
 			xmlhttp.onreadystatechange = function(){
 				if(xmlhttp.status == 200){
 					try{
 						if(xmlhttp.responseXML){
-							that.getResponseXML(xmlhttp.responseXML);
+							this.getResponseXML(xmlhttp.responseXML);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseXML);
 						}else if(xmlhttp.responseText){
-							that.getResponseStr(xmlhttp.responseText);
+							this.getResponseStr(xmlhttp.responseText);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseText);
 						}
@@ -1383,12 +1444,12 @@
 						}
 					}
 					catch(message){
-						debug(message);
+						debug.log(message);
 					}
 				}
-			}
+			}.bind(base.Ajax);
 		},
-		post: function(url, callback, queryStr, isAsy){
+		post: function(url, queryStr, isAsy, callback){
 			var xmlhttp = new XMLHttpRequest(), bool;
 			if(typeof isAsy == "boolean")
 				bool = isAsy;
@@ -1407,11 +1468,11 @@
 				if(xmlhttp.status == 200){
 					try{
 						if(xmlhttp.responseXML){
-							that.getResponseXML(xmlhttp.responseXML);
+							this.getResponseXML(xmlhttp.responseXML);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseXML);
 						}else if(xmlhttp.responseText){
-							that.getResponseStr(xmlhttp.responseText);
+							this.getResponseStr(xmlhttp.responseText);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseText);
 						}
@@ -1420,10 +1481,10 @@
 						}
 					}
 					catch(message){
-						debug(message);
+						debug.log(message);
 					}
 				}
-			};
+			}.bind(base.Ajax);
 		}
 	});
 	
