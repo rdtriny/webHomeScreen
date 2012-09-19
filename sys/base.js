@@ -1,79 +1,54 @@
-var _Base_ = (function(window, undefined){		
+var _Base_ = (function(window, undefined){
+
 	var base = function(container, config){
-		var that = this;	
+	
+		// when the document is ready, begin to setup the system.
+		
 		window.addEventListener('load',function(){
 			if(typeof container == "string"){
-				that.container = document.getElementById(container);
+				this.container = document.getElementById(container);
 			}
 			else if(typeof container == "object" && container.nodeType == 1){
-				that.container = container;
+				this.container = container;
 			}
 			//copy the configs into the base's prototype.
 			if(config && typeof config == "object"){
 				for(var i in config){
-					that[i] = config[i];
+					this[i] = config[i];
 				}
 			}
 			document.body.addEventListener("touchstart", function(e){
-				that.touchstart(e);
-			}, false);
+				this.touchstart(e);
+			}.bind(this), false);
+			
 			document.body.addEventListener("touchmove", function(e){
-				that.touchmove(e);
-			}, false);
+				this.touchmove(e);
+			}.bind(this), false);
+			
 			document.body.addEventListener("touchend", function(e){
-				that.touchend(e);
-			}, false);
+				this.touchend(e);
+			}.bind(this), false);
+			
 			document.body.addEventListener("touchcancel", function(e){
-				that.touchcancel(e);
-			}, false);
+				this.touchcancel(e);
+			}.bind(this), false);
+			
 			document.body.addEventListener("click", function(e){
-				that.click(e);
-			}, false);
+				this.click(e);
+			}.bind(this), false);
+			
 			// It's a flag to direct the widgets' action.
-			that.isWidgetShow = false;
+			this.isWidgetShow = false;
 			// add the favorite tray area.
-			that.addFixedArea();
+			this.addFixedArea();
 			// some sound effect.
 			base.Sound.loadAudio("./mp3.mp3");
 			// launch the system, init all components.
-			that.run();
+			this.run();
 			base.Version.showVersion();
-		}, false);
-	};
-	
-	/*
-		make the following apis can't be access out of the scope.
-	*/	
-	
-	// regListener is used to add a callback function to native, when apps are ready, native code will call callback, and pass
-	// the app list JSON.
-	var regListener = function(callbackName){
-		window.nativeapps.setWebUpdateContentCallback(callbackName);
-	};
-	
-	var getDefaultIconUri = function(){
-		// If the icons aren't prepared, use a default icon.
-		return window.nativeapps.getDefaultAppIconUri();
-	};
-	//identification is like this: com.orange.browser/com.a.b
-	var launchApp = function(identification){
-		// identification stands for the id of appliction div, which is like : com.*.*/com.*.*.*Activity
-		var array = identification.split('/');
-		var pkg = array[0];
-		var cls = array[1];
-		// native interface, two arguments: package name and activity name.
-		window.nativeapps.launchActivity(pkg, cls);
-	};
-	
-	// parse to float
-	var toNum = function(arg){
-		var result = parseFloat(arg);
-		if(isNaN(result)){
-			result = 0;
-		}
-		return result;
-	}
-	
+		}.bind(this), false);
+	};	
+		
 	//
 	//	a interface which to include properties from other objects.
 	//	example:
@@ -100,6 +75,47 @@ var _Base_ = (function(window, undefined){
 		}
 		return target;
 	};
+	
+	//
+	// Some special APIs, which is supported by browser native code. Not native interfaces.
+	//
+	// regListener #### 
+	// 		used to add a callback function to native, when apps are ready, native code will call callback, and pass
+	// 		the app list JSON.
+	//
+	// getDefaultIconUri ####  
+	//		used to fetch a default image, before the real images are loaded, show default images.
+	//
+	//  launchApp ####
+	//		launch an specific android activity
+	//
+	base.Browser = base.extend( base.Browser, {
+		regListener : function(callbackName){
+			window.nativeapps.setWebUpdateContentCallback(callbackName);
+		},	
+		getDefaultIconUri : function(){
+			// If the icons aren't prepared, use a default icon.
+			return window.nativeapps.getDefaultAppIconUri();
+		},
+		//identification is like this: com.orange.browser/com.a.b
+		launchApp : function(identification){
+			// identification stands for the id of appliction div, which is like : com.*.*/com.*.*.*Activity
+			var array = identification.split('/');
+			var pkg = array[0];
+			var cls = array[1];
+			// native interface, two arguments: package name and activity name.
+			window.nativeapps.launchActivity(pkg, cls);
+		}
+	});
+	
+	// parse to float
+	var toNum = function(arg){
+		var result = parseFloat(arg);
+		if(isNaN(result)){
+			result = 0;
+		}
+		return result;
+	}
 	
 	//
 	// APIs related to DOM node
@@ -218,11 +234,11 @@ var _Base_ = (function(window, undefined){
 		run: function(){
 			// this is the callback function when init. native code can only access the properties of window.
 			window.loadRes = this.loadRes.bind(this);
-			regListener("loadRes");					
+			base.Browser.regListener("loadRes");
 		},
 		// parse the applications' JSON info and then register them.
 		loadRes: function(appListJson, lastBatch){
-			var apps, defaultUri = getDefaultIconUri();
+			var apps, defaultUri = base.Browser.getDefaultIconUri();
 			apps = eval(appListJson);
 			var len = apps.length;
 			var icon, label;
@@ -343,15 +359,14 @@ var _Base_ = (function(window, undefined){
 				this.startY = e.touches[0].pageY;
 				
 				//if you touch one point for 1 seconds, longtap fires.
-				var that = this;
 				this.longTapIndex = setTimeout(function(){
 					var event = document.createEvent("Events");
 					event.initEvent("longtap", true, true);
 					e.target.dispatchEvent(event);
-					that.longtapStart = true;
-					that.dragStart(e);							
-					that.sideBar(false);
-				}, 1000);
+					this.longtapStart = true;
+					this.dragStart(e);							
+					this.sideBar(false);
+				}.bind(this), 1000);
 			}
 			else if(e.touches.length === 2){
 				//this line is very very important, 'cause when two point gestures fire, the length will be 1,2,1 in order. prevent Drag event.
@@ -502,7 +517,7 @@ var _Base_ = (function(window, undefined){
 						target = target.parentNode;
 					}				
 					if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){						
-						launchApp(target.id);
+						base.Browser.launchApp(target.id);
 						console.log(target.id);
 						base.Sound.playAudio(0);
 					}
