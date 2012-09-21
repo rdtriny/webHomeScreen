@@ -1,6 +1,6 @@
 (function(window, undefined){
 
-	var base = function(container, config){
+	var base = function(config){
 	
 		//copy the configs into the base's prototype.
 		
