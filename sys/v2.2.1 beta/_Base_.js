@@ -95,11 +95,8 @@
 	 |		some Key Functions, including: Browser, System, Drive, Page, App, Queue, Widget;
 	*/
 	['./js/Ajax', './js/Debug', './js/DOM', './js/Browser', './js/System', './js/Drive', './js/Page', './js/App', './js/Sidebar', './js/Box', './js/Queue', './js/Widget'
-	,'./js/Tray', './js/Notify', './js/Helper', './js/Sound', './js/spriteMovie'].require();
+	,'./js/Tray', './js/Notify', './js/Helper', './js/Sound', './js/spriteMovie', './js/Test'].require();
 	
-	window.addEventListener('load', function(){		
-		_Base_.System.run("iconsContainer",{isVertical:true, appsPerRow:4, appsPerColumn:4});
-	}, false);
 	
 })(window);
 

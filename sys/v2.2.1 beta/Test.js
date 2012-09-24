@@ -1,7 +1,7 @@
-var system = new _Base_();
 
-var system = _Base_;
-system.run();
+window.addEventListener('load', function(){		
+	_Base_.System.run("iconsContainer",{isVertical:true, appsPerRow:4, appsPerColumn:4});
+}, false);
 
 // avoid the 'undefined' error when native code this function.
 function updateContent(){}
