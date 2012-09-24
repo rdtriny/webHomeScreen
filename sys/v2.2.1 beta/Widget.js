@@ -1,7 +1,6 @@
 !function(base){
 
-	var App = base.App,
-		Config  = base.Config,
+	var Config  = base.Config,
 		Page = base.Page,
 		Drive = base.Drive,
 		Tray = base.Tray,
@@ -89,7 +88,7 @@
 					}
 				}
 				try{
-					App.Yield(elPos, base.Widget.widgets[key].size, "right");
+					base.App.Yield(elPos, base.Widget.widgets[key].size, "right");
 					obj.open.func(e);
 				}
 				catch(error){
