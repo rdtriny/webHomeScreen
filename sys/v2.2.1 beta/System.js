@@ -100,7 +100,7 @@
 		//
 		// a brief version information
 		//
-		version: '2.1.3 beta',
+		version: '2.1.5 beta',
 		showVersion: function(){
 			base.Debug.log('Version: '+base.System.version);
 			return base.System.version;
