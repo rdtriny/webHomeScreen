@@ -4,7 +4,6 @@
 		Page = base.Page,
 		Drive = base.Drive,
 		Tray = base.Tray,
-		Queue = base.Queue,
 		Box = base.Box;
 		
 	//some apps get widgets, so this is the way manage them.
@@ -62,34 +61,46 @@
 		/* 	add some listeners on the widget. 
 			defines the methods of how to open/close widgets.
 		*/
-		initWidget: function(key,obj){
-			var elPos = -1;
-			if(typeof obj.open.node == "string"){
-				base.Widget.widgets[key].open.node = obj.open.node;
-				var openNode = document.getElementById(obj.open.node);
-			}else if(typeof obj.open.node == "object" && obj.open.node.nodeType == 1){
-				base.Widget.widgets[key].open.node = obj.open.node.id;
-				openNode = obj.open.node;
+		initWidget: function(key,wgt){
+			if(typeof wgt.open.node == "string"){
+				base.Widget.widgets[key].open.node = wgt.open.node;
+				var openNode = document.getElementById(wgt.open.node);
+			}else if(typeof wgt.open.node == "object" && wgt.open.node.nodeType == 1){
+				base.Widget.widgets[key].open.node = wgt.open.node.id;
+				openNode = wgt.open.node;
 			}
-			if(typeof obj.close.node == "string"){
-				base.Widget.widgets[key].close.node = obj.close.node;
-				var closeNode = document.getElementById(obj.close.node);
+			if(typeof wgt.close.node == "string"){
+				base.Widget.widgets[key].close.node = wgt.close.node;
+				var closeNode = document.getElementById(wgt.close.node);
 				
-			}else if(typeof obj.close.node == "object" && obj.close.node.nodeType == 1){
-				base.Widget.widgets[key].close.node = obj.close.node.id;
-				var closeNode = obj.close.node;
+			}else if(typeof wgt.close.node == "object" && wgt.close.node.nodeType == 1){
+				base.Widget.widgets[key].close.node = wgt.close.node.id;
+				var closeNode = wgt.close.node;
 			}
+			base.Widget.attachEvent(key, openNode, closeNode, wgt);
+		},
+		//find the widget location, where it should be displayed.
+		locateWidget: function(wgt, top, left){
+			if(base.Widget.widgets[wgt]){
+				var widget = base.Widget.widgets[wgt].widget;
+				widget.style.left = left;
+				widget.style.top = top;
+			}
+		},
+		attachEvent: function(key, openNode,  closeNode, wgt ){
+			var elPos = -1;
 			//Hide the app icon, after open its widget
-			openNode.addEventListener("dbclick", function(e){
-				for(var j=0; j<Queue.queue.length; j++){
-					if(Queue.queue[j] && Queue.queue[j].id === key){
+			openNode.lastChild.addEventListener("click", function(e){
+				for(var j=0; j<base.Queue.queue.length; j++){
+					if(base.Queue.queue[j] && base.Queue.queue[j].id === key){
 						elPos = j+1;
 						// yield space for widget, pass the widget's size a the optional direction
 					}
 				}
 				try{
 					base.App.Yield(elPos, base.Widget.widgets[key].size, "right");
-					obj.open.func(e);
+					wgt.open.func(e);
+					openNode.style.display = "none";
 				}
 				catch(error){
 					console.log(error);
@@ -100,25 +111,20 @@
 				openNode.style.top = base.Widget.widgets[key].widget.style.top;
 				openNode.style.left = base.Widget.widgets[key].widget.style.left;
 				try{
-					obj.close.func(e);
+					wgt.close.func(e);
 					// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
 					setTimeout(function(){
 						//that.withdraw(elPos, that.widgets[key].size, "left");						
 						base.Widget.isWidgetShow = false;
 						closeNode.style.display = "none";
+						openNode.style.display = "block";
 					},800);
 				}
 				catch(error){
 					console.log(error);
 				}
 			}, false);
-		},
-		//find the widget location, where it should be displayed.
-		locateWidget: function(wgt, top, left){
-			var widget = base.Widget.widgets[wgt].widget;
-			widget.style.left = left;
-			widget.style.top = top;
-		},
+		}
 	});
 	
 	_Base_ = base;

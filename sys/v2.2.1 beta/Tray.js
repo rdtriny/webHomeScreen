@@ -1,7 +1,6 @@
 !function(base){
 		
-	var Page = base.Page,
-		Drive = base.Drive,
+	var Drive = base.Drive,
 		Widget = base.Widget,
 		Box = base.Box;
 	
@@ -95,15 +94,14 @@
 		},
 		//delete target from container and modify queue of the apps list.
 		endToOut: function(isSuccess){
-			debug.log(isSuccess);
 			if(typeof isSuccess == 'boolean' && isSuccess){
 				var des = base.App.to-1;
 				base.Tray.tray.removeChild(base.App.target);
 				base.App.target = base.Tray.Var.targetMem;
 				base.Queue.queue[des] = base.App.target;
 				base.App.target.style.left = (des%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
-				base.App.target.style.top = Math.floor(des/base.Config.appsPerColumn)*100/(Page.pagesCount*base.Config.appsPerColumn)+"%";
-				base.App.target.style.height = 100/(Page.pagesCount*base.Config.appsPerColumn) + "%";
+				base.App.target.style.top = Math.floor(des/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
+				base.App.target.style.height = 100/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
 				base.App.target.style.width = "25%";				
 			}
 			base.Tray.Var.targetMem = null;
@@ -113,7 +111,7 @@
 		},
 		isActionOut: function(target){
 			try{
-				if(target.parentNode.id == "tray"){
+				if(target.parentNode && target.parentNode.id == "tray"){
 					base.Tray.Var.actionOut = true;
 				}
 				else{
@@ -136,38 +134,8 @@
 				widget.widget.style.top = base.App.target.style.top;
 				widget.widget.style.left = base.App.target.style.left;
 				
-				//restore the open event and close event to the app& widget.			
-				openNode.addEventListener("dbclick", function(e){
-					for(var j=0; j<base.Queue.queue.length; j++){
-						if(base.Queue.queue[j] && base.Queue.queue[j].id === key){
-							var elPos = j+1;
-							// yield space for widget, pass the widget's size a the optional direction
-						}
-					}
-					try{
-						base.App.Yield(elPos, Widget.widgets[key].size, "right");
-						widget.open.func(e);
-					}
-					catch(error){
-						console.log(error);
-					}
-				}, false);
-				closeNode.addEventListener("dbclick", function(e){
-					openNode.style.top = Widget.widgets[key].widget.style.top;
-					openNode.style.left = Widget.widgets[key].widget.style.left;
-					try{
-						widget.close.func(e);
-						// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
-						setTimeout(function(){
-							//that.withdraw(elPos, that.widgets[key].size, "left");						
-							Widget.isWidgetShow = false;
-							closeNode.style.display = "none";
-						},800);
-					}
-					catch(error){
-						console.log(error);
-					}
-				}, false);
+				//restore the open event and close event to the app& widget.
+				base.Widget.attachEvent(key, openNode, closeNode, widget);
 			}
 		}
 	});	

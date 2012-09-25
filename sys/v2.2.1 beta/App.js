@@ -1,7 +1,4 @@
 !function(base){
-	
-	var	Box = base.Box;
-		
 		
 	base.App = base.extend(base.App, {
 		// a function which defines the structure of application's div.
@@ -29,7 +26,7 @@
 			var appNode = base.App.createAppNode(app);
 			if(app.widget){
 				base.require(app.widget);
-				appNode.setAttribute("isWidget", "true");
+				appNode.setAttribute("hasWidget", "true");
 			}
 			base.Queue.queue.push(appNode);
 		},
@@ -42,13 +39,53 @@
 				appNode.className = "icon";
 				appNode.id = app.packageName;				
 				
+				var closeDiv = document.createElement("div");
+				closeDiv.style.position = "absolute";
+				closeDiv.style.display = "none";
+				closeDiv.style.width = "10px";
+				closeDiv.style.height = "10px";
+				closeDiv.style.top = "45%";
+				closeDiv.style.left = "50%";
+				closeDiv.style.marginTop = "-24px";
+				closeDiv.style.marginLeft = "-24px";
+				closeDiv.style.zIndex = "2";
+				closeDiv.style.background = "url(./images/close.png) top left no-repeat";
+				closeDiv.style.backgroundSize = "100% 100%";				
+				appNode.appendChild(closeDiv);
+				
+				var openDiv = document.createElement("div");
+				openDiv.style.position = "absolute";
+				openDiv.style.display = "none";
+				openDiv.style.width = "10px";
+				openDiv.style.height = "10px";
+				openDiv.style.top = "90%";
+				openDiv.style.left = "90%";
+				openDiv.style.zIndex = "2";
+				openDiv.style.background = "url(./images/enlarge.png) top left no-repeat";
+				openDiv.style.backgroundSize = "100% 100%";				
+				appNode.appendChild(openDiv);
+				
 				var img = document.createElement("img");
 				img.src = app.imgSrc;
 				appNode.appendChild(img);
 				
 				var span = document.createElement("span");
 				span.innerHTML = app.title;
-				appNode.appendChild(span);				
+				appNode.appendChild(span);
+				
+				var openDiv = document.createElement("div");
+				openDiv.style.position = "absolute";
+				openDiv.style.display = "none";
+				openDiv.style.width = "8px";
+				openDiv.style.height = "8px";
+				openDiv.style.top = "45%";
+				openDiv.style.left = "50%";				
+				openDiv.style.marginTop = "20px";
+				openDiv.style.marginLeft = "20px";
+				openDiv.style.zIndex = "10";
+				openDiv.style.background = "url(./images/enlarge.png) top left no-repeat";
+				openDiv.style.backgroundSize = "100% 100%";				
+				appNode.appendChild(openDiv);
 			}
 			return appNode;
 		},
@@ -259,7 +296,8 @@
 		from: false,
 		// the nth number when drag move.
 		to: false,			
-		isDragging: false,
+		editMode: false,
+		activeEdit: false,
 		dragStart: function(e){
 			var target = e.target;
 			base.Page.rowIndexMem = base.Page.currentRowIndex;
@@ -282,26 +320,42 @@
 				*/
 				target.style.webkitTransform = "scale(1.2)";
 				target.style.zIndex = "9";
-				base.App.isDragging = true;
+				if(!base.App.editMode){
+					base.App.activeEdit = true;
+				}
+				else{
+					base.App.activeEdit = false;					
+				}
+				base.App.target = target;	
+			}
+			else if(target.nodeType == 1 && target.getAttribute('iWidget')){
+				if(!base.App.editMode){
+					base.App.activeEdit = true;
+				}
+				else{
+					base.App.activeEdit = false;
+				}
 				base.App.target = target;
-				// fires an drag event.
-				base.App.Drag.bubbleDragEvent(e);	
-			}else if(target.getAttribute('iWidget')){
-				base.App.isDragging = true;
-				base.App.target = target;
-				// fires an drag event.
-				base.App.bubbleDragEvent(e);	
+			}else{
+				base.App.target = null;
+			}
+			if(base.App.activeEdit){
+				base.App.Drag.openEditMode();
 			}
 			
-			for(var j=0; j<base.Queue.queue.length; j++){
-				if(base.Queue.queue[j]&&(base.Queue.queue[j].id === base.App.target.id || base.Queue.queue[j].id === base.App.target.getAttribute("iWidget")))
-					base.App.from = j+1;
-			}			
-			// if the app moves out of favorite tray, or moves into the favorite , or just in iconContainer.
-			base.Tray.isActionOut(target);
+			if(base.App.target){			
+				
+				// fires an drag event.
+				base.App.Drag.bubbleDragEvent(e);	
+				base.App.from = base.App.Drag.findStartPos();
+				
+				// if the app moves out of favorite tray, or moves into the favorite , or just in iconContainer.
+				base.Tray.isActionOut(target);
+			}
+			
 		},
-		dragMove: function(e){			
-			if(!base.App.isDragging){
+		dragMove: function(e){
+			if(!base.App.editMode || !base.App.target){
 				return ;
 			}
 			var pagex = base.Drive.Var.endX = e.touches[0].pageX;
@@ -377,7 +431,7 @@
 				
 			clearTimeout(base.App.timeout);
 			clearTimeout(base.App.timeout2);
-			if(!base.App.isDragging){
+			if(!base.App.editMode || !base.App.target){
 				return ;
 			}else {
 				/*
@@ -419,10 +473,20 @@
 					base.App.target.style.top = Math.floor((from-1)/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
 				}
 			}
-			base.App.isDragging = false;
+			
+			/*	editMode only can't be canceled by cancel key.
+			 */
+			//base.App.Drag.closeEditMode();
 			base.App.to = false;
 			base.App.from = false;
 			base.App.toMem = false;
+		},
+		findStartPos: function(){
+			for(var j=0; j<base.Queue.queue.length; j++){
+				if(base.Queue.queue[j] && (base.Queue.queue[j].id === base.App.target.id || base.Queue.queue[j].id === base.App.target.getAttribute("iWidget"))){
+					return (j+1);
+				}
+			}
 		},
 		exchangeOnMove: function(pagey){
 			clearTimeout(base.App.timeout2);
@@ -437,7 +501,30 @@
 			var event = document.createEvent("Events");
 			event.initEvent("drag", true, true);
 			e.target.dispatchEvent(event);
-		},	
+		},
+		openEditMode: function(){
+			for(var j=0; j<base.Queue.queue.length; j++){
+				if(base.Queue.queue[j]){
+					base.Queue.queue[j].firstChild.style.display = "block";
+					if(base.Queue.queue[j].getAttribute("hasWidget")){
+						base.Queue.queue[j].lastChild.style.display = "block";
+					}
+				}
+			}
+			base.App.editMode = true;
+		},
+		closeEditMode: function(){
+			for(var j=0; j<base.Queue.queue.length; j++){
+				if(base.Queue.queue[j]){
+					base.Queue.queue[j].firstChild.style.display = "none";
+					if(base.Queue.queue[j].getAttribute("hasWidget")){
+						base.Queue.queue[j].lastChild.style.display = "none";
+					}
+				}
+			}
+			base.App.editMode = false;
+			base.App.activeEdit = false;
+		}
 	});
 	
 	_Base_ = base;

@@ -13,8 +13,6 @@
 			pinchEndLen: 0,
 			// the return value of setTimeout
 			longTapIndex: -1,
-			// flag indicates whether longtap fires or not
-			longtapStart: false,
 			lastClickTime: 0,
 			// the return value of setTimeout
 			clickIndex: -1,
@@ -37,18 +35,20 @@
 			// calculate the app's height and width, once for all.
 			base.App.getSize();
 			base.Drive.Var.pinchEndLen = 0;
-			base.Drive.Var.longtapStart = false;
 			if(e.touches.length === 1){
 				base.Drive.Var.startX = e.touches[0].pageX;
 				base.Drive.Var.startY = e.touches[0].pageY;
 				
+				if(base.App.editMode)					
+					base.App.Drag.dragStart(e);	
 				//if you touch one point for 1 seconds, longtap fires.
 				base.Drive.Var.longTapIndex = setTimeout(function(){
 					var event = document.createEvent("Events");
 					event.initEvent("longtap", true, true);
 					e.target.dispatchEvent(event);
-					base.Drive.Var.longtapStart = true;
-					base.App.Drag.dragStart(e);							
+					if(!base.App.editMode){
+						base.App.Drag.dragStart(e);	
+					}
 					base.Sidebar.sideBar(false);
 				}, 1000);
 			}
@@ -66,7 +66,7 @@
 			Var.lastMoveTime = new Date;					
 			clearTimeout(Var.longTapIndex);
 			// if longtap fires just now, dragMove() will run. if not, slide will run.
-			if(!Var.longtapStart){
+			if(!base.App.editMode){
 				if(e.touches.length == 1){
 					Var.nextToEndX = Var.endX;
 					Var.nextToEndY = Var.endY;
@@ -106,7 +106,12 @@
 						e.target.dispatchEvent(pinchEvent);
 					}
 				}
-			}else{
+			}
+			else{
+				var pagey = e.touches[0].pageY;				
+				var y = Var.startY-pagey + Var.moveStartY;				
+				base.Sidebar.moveSidebar(base.Sidebar.sidebar, {x:0,y:y});
+				base.Page.moveBG(base.Config.isBGMovable, {x:0, y:y});
 				base.App.Drag.dragMove(e);
 			}
 		},
@@ -114,8 +119,11 @@
 			var Var = base.Drive.Var,
 				currentRowIndex = base.Page.currentRowIndex;
 			
-			if(Var.longtapStart){
-				base.App.Drag.dragEnd(e);				
+			if(base.App.editMode){
+				base.App.Drag.dragEnd(e);
+				var y = currentRowIndex*base.App.iconHeight;
+				base.Sidebar.moveSidebar(base.Sidebar.sidebar, {x:0, y:y});
+				base.Page.moveBG(base.Config.isBGMovable, {x:0, y:y});
 			}else{
 				clearTimeout(Var.longTapIndex);
 				var w = Var.endX-Var.nextToEndX;
@@ -205,7 +213,7 @@
 					while(!target.id && target.id!="iconsContainer"){
 						target = target.parentNode;
 					}				
-					if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){						
+					if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){
 						base.Browser.launchApp(target.id);
 						console.log(target.id);
 						base.Sound.playAudio(0);
