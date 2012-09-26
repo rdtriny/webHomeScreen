@@ -44,7 +44,9 @@
 			base.System.init(container);
 			// this is the callback function when init. native code can only access the properties of window.
 			window.loadRes = base.System.loadRes;
-			base.Browser.regListener("loadRes");			
+			base.Browser.regListener("loadRes");
+			window.hardkeyListener = base.System.hardkeyListener;
+			base.Browser.hardkey("hardkeyListener");
 			base.System.showVersion();
 		},
 		// parse the applications' JSON info and then register them.
@@ -91,7 +93,7 @@
 			if(base.Config.isVertical){
 				container.style.height = 100 * pagesCount+"%";
 				for(var i=0; i<icons.length; i++){
-					icons[i].style.height = 100/( pagesCount * appsPerColumn)+"%";						
+					icons[i].style.height = 80/( pagesCount * appsPerColumn)+"%";					
 					icons[i].style.left = (i%appsPerRow) * (100/appsPerRow)+"%";
 					icons[i].style.top = Math.floor(i/appsPerColumn) * 100/(pagesCount * appsPerColumn)+"%";
 				}
@@ -100,11 +102,26 @@
 		//
 		// a brief version information
 		//
-		version: '2.1.5 beta',
+		version: '2.1.6 beta',
 		showVersion: function(){
 			base.Debug.log('Version: '+base.System.version);
 			return base.System.version;
 		},
+		hardkeyListener: function(keycode){
+			// back key is pressed.
+			if(keycode == 4){
+				// cancel edit mode.
+				base.App.Drag.closeEditMode();
+			}
+			// home key is pressed.
+			else if(keycode == 3){
+				// still launch this app.
+				// set our app as home default in android setting.
+			}
+			else{
+				//do nothing.
+			}
+		}
 	});
 	_Base_ = base;
 }(_Base_);

@@ -1,7 +1,6 @@
 !function(base){
 		
 	var Drive = base.Drive,
-		Widget = base.Widget,
 		Box = base.Box;
 	
 	//
@@ -65,7 +64,7 @@
 		},
 		checkFull: function(){
 			var icons = base.Tray.tray.getElementsByClassName("icon");
-			if(icons.length<6){
+			if(icons.length<5){
 				return false;
 			}else{
 				return true;
@@ -75,16 +74,16 @@
 		arrange: function(){
 			var icons = base.Tray.tray.getElementsByClassName("icon");
 			var num = icons.length;
-			var spacing = (100-20*num)/(num+1);
+			var spacing = (100-25*num)/(num+1);
 			for(var i=0; i<num; i++){
 				/*
 				icons[i].style.webkitAnimation = "";
-				*/				
+				*/
 				icons[i].style.webkitTransform = "";
 				icons[i].style.top = "0";
 				icons[i].style.height = "100%";
 				icons[i].style.width = "20%";
-				icons[i].style.left = (spacing+20)*i + spacing + "%";
+				icons[i].style.left = (spacing+25)*i + spacing + "%";
 			}
 		},
 		moveOutTray: function(){
@@ -101,8 +100,11 @@
 				base.Queue.queue[des] = base.App.target;
 				base.App.target.style.left = (des%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
 				base.App.target.style.top = Math.floor(des/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
-				base.App.target.style.height = 100/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
-				base.App.target.style.width = "25%";				
+				base.App.target.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
+				base.App.target.style.width = "20%";
+			}else{
+				if(base.Tray.Var.targetMem)
+					base.container.removeChild(base.Tray.Var.targetMem);
 			}
 			base.Tray.Var.targetMem = null;
 			base.Tray.arrange();
@@ -124,7 +126,7 @@
 		},
 		restoreEvent: function(){
 			var key = base.App.target.id;
-			var widget = Widget.widgets[key];
+			var widget = base.Widget.widgets[key];
 			// if the target app has a widget, restore open/close event to the widget.
 			if(widget){
 				var openNode = document.getElementById(widget.open.node);

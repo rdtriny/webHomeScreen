@@ -6,7 +6,7 @@
 	base.Box = base.extend(base.Box, {		
 		highlightBox: null,
 		//show whether the app can be dragged to the target location. red for no, green for yes.
-		highlight: function(sideLen){			
+		highlight: function(sideLen){
 			var des = base.App.to - 1, i;
 			if(!base.Box.highlightBox){
 				var div = document.createElement("div");

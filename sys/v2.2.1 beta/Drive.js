@@ -29,11 +29,11 @@
 			endY: 0,
 			lastMoveTime: undefined
 		},
-		touchstart: function(e){
-			// display the sidebar.
-			base.Sidebar.sideBar(true);
+		touchstart: function(e){					
 			// calculate the app's height and width, once for all.
 			base.App.getSize();
+			// display the sidebar.
+			base.Sidebar.sideBar(true);
 			base.Drive.Var.pinchEndLen = 0;
 			if(e.touches.length === 1){
 				base.Drive.Var.startX = e.touches[0].pageX;
@@ -202,23 +202,25 @@
 			var Var = base.Drive.Var;
 			var now = new Date;			
 			var target = e.target;
-			// two clicks within 400ms, double click fires, or two click event fires.
-			if(now - Var.lastClickTime<400){
-				clearTimeout(Var.clickIndex);
-				var event = document.createEvent("Events");
-				event.initEvent("dbclick", true, true);
-				e.target.dispatchEvent(event);
-			}else{
-				Var.clickIndex = setTimeout(function(){
-					while(!target.id && target.id!="iconsContainer"){
-						target = target.parentNode;
-					}				
-					if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){
-						base.Browser.launchApp(target.id);
-						console.log(target.id);
-						base.Sound.playAudio(0);
-					}
-				}, 400);
+			if(!base.App.editMode){
+				// two clicks within 400ms, double click fires, or two click event fires.
+				if(now - Var.lastClickTime<400){
+					clearTimeout(Var.clickIndex);
+					var event = document.createEvent("Events");
+					event.initEvent("dbclick", true, true);
+					e.target.dispatchEvent(event);
+				}else{
+					Var.clickIndex = setTimeout(function(){
+						while(!target.id && target.id!="iconsContainer"){
+							target = target.parentNode;
+						}				
+						if(/[A-z0-9]+\./ig.test(target.id) && e.target.nodeName == "IMG"){
+							base.Browser.launchApp(target.id);
+							console.log(target.id);
+							base.Sound.playAudio(0);
+						}
+					}, 400);
+				}
 			}
 			Var.lastClickTime = now;
 		}

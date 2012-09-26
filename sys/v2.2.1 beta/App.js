@@ -11,13 +11,11 @@
 			if(base.App.iconWidth&&base.App.iconHeight){
 				return false;
 			}
-			var icons = base.container.getElementsByClassName("icon");
-			var i = 0;
-			while((!icons[i].clientWidth) && (!icons[i].clientHeight)){
-				i++;
+			var appScreen = document.getElementById("appScreen");
+			if( appScreen.clientWidth && appScreen.clientHeight){
+				base.App.iconWidth = appScreen.clientWidth/4;
+				base.App.iconHeight = appScreen.clientHeight/4;
 			}
-			base.App.iconWidth = icons[i].clientWidth;
-			base.App.iconHeight = icons[i].clientHeight;
 			return true;
 		},
 		//register application to the system.
@@ -318,6 +316,7 @@
 				target.style.webkitAnimationTimingFunction="ease";
 				target.style.webkitAnimationIterationCount= "infinite";
 				*/
+				// only change style of the img node.
 				target.style.webkitTransform = "scale(1.2)";
 				target.style.zIndex = "9";
 				if(!base.App.editMode){
@@ -339,8 +338,13 @@
 			}else{
 				base.App.target = null;
 			}
+			// switch to edit mode.
 			if(base.App.activeEdit){
 				base.App.Drag.openEditMode();
+				// make a weak vibration. vibrate after all the apps have changed their former style.
+				setTimeout(function(){
+					base.Browser.vibrate(60);
+				},0);
 			}
 			
 			if(base.App.target){			
@@ -448,7 +452,10 @@
 				if(!base.Queue.queue[base.App.to-1]){
 					base.Tray.moveOutTray();
 				}
-				base.Tray.endToOut(!base.Queue.queue[base.App.to-1]);
+				// if the destination space has no apps, move the app out of tray to iconsContainer. 
+				// else restore the target's state.
+				base.Tray.endToOut((!base.Queue.queue[base.App.to-1]) && (typeof base.App.to == "number"));
+					
 			}
 			else{
 				var from = base.App.from;
@@ -502,7 +509,9 @@
 			event.initEvent("drag", true, true);
 			e.target.dispatchEvent(event);
 		},
-		openEditMode: function(){
+		openEditMode: function(){			
+			var icons = base.Tray.tray.getElementsByClassName("icon");
+			// style apps in iconsContainer to edit mode.
 			for(var j=0; j<base.Queue.queue.length; j++){
 				if(base.Queue.queue[j]){
 					base.Queue.queue[j].firstChild.style.display = "block";
@@ -511,9 +520,17 @@
 					}
 				}
 			}
+			
+			// restyle apps in faviourite tray to edit mode.
+			for(var i=0; i<icons.length; i++){
+				icons[i].firstChild.style.display = "block";
+			}
+			
 			base.App.editMode = true;
 		},
 		closeEditMode: function(){
+			var icons = base.Tray.tray.getElementsByClassName("icon");
+			// restyle apps in iconsContainer.
 			for(var j=0; j<base.Queue.queue.length; j++){
 				if(base.Queue.queue[j]){
 					base.Queue.queue[j].firstChild.style.display = "none";
@@ -521,6 +538,11 @@
 						base.Queue.queue[j].lastChild.style.display = "none";
 					}
 				}
+			}
+			// restyle apps in faviourite tray.
+			for(var i=0; i<icons.length; i++){
+				icons[i].firstChild.style.display = "none";
+				icons[i].lastChild.style.display = "none";
 			}
 			base.App.editMode = false;
 			base.App.activeEdit = false;

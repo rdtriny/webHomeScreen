@@ -28,6 +28,14 @@
 			var cls = array[1];
 			// native interface, two arguments: package name and activity name.
 			window.nativeapps.launchActivity(pkg, cls);
+		},
+		// hijack the hardkey pressing by native app, because javascript can't do that.
+		hardkey: function(callbackName){
+			window.nativeapps.setWebKeyEventCallback(callbackName);
+		},
+		// vibration.
+		vibrate: function(milliseconds){
+			window.nativeapps.vibrate(milliseconds);
 		}
 	});
 	
