@@ -93,9 +93,7 @@
 			if(base.Config.isVertical){
 				container.style.height = 100 * pagesCount+"%";
 				for(var i=0; i<icons.length; i++){
-					icons[i].style.height = 80/( pagesCount * appsPerColumn)+"%";					
-					icons[i].style.left = (i%appsPerRow) * (100/appsPerRow)+"%";
-					icons[i].style.top = Math.floor(i/appsPerColumn) * 100/(pagesCount * appsPerColumn)+"%";
+					base.App.resizeApp(icons[i], i);
 				}
 			}
 		},		

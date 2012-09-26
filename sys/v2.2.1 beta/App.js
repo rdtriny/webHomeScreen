@@ -95,6 +95,11 @@
 			}else{
 				return false;
 			}
+		},
+		resizeApp: function(app, pos){			
+			app.style.left = (pos%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
+			app.style.top = Math.floor(pos/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
+			app.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
 		}
 	});
 	

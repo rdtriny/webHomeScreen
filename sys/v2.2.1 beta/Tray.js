@@ -82,7 +82,6 @@
 				icons[i].style.webkitTransform = "";
 				icons[i].style.top = "0";
 				icons[i].style.height = "100%";
-				icons[i].style.width = "20%";
 				icons[i].style.left = (spacing+25)*i + spacing + "%";
 			}
 		},
@@ -98,10 +97,7 @@
 				base.Tray.tray.removeChild(base.App.target);
 				base.App.target = base.Tray.Var.targetMem;
 				base.Queue.queue[des] = base.App.target;
-				base.App.target.style.left = (des%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
-				base.App.target.style.top = Math.floor(des/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
-				base.App.target.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
-				base.App.target.style.width = "20%";
+				base.App.resizeApp(base.App.target, des);
 			}else{
 				if(base.Tray.Var.targetMem)
 					base.container.removeChild(base.Tray.Var.targetMem);
