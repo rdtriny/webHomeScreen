@@ -18,13 +18,11 @@
 	
 	function open(e){
 		if((/[A-z0-9]+\./ig.test(e.target.parentNode.id) && e.target.parentNode.getAttribute("hasWidget")) ||  (/[A-z0-9]+\./ig.test(e.target.id) && e.target.getAttribute("hasWidget"))){
-			var pagex = e.pageX, pagey = e.pageY;
 			var icon = document.getElementsByClassName("icon")[0];
 			flashWindow.style.display = "block";
 			SM = new spriteMovie(imgSrc, flashWinCon, movieArray);		
 			setTimeout(function(){			
 				stretchTo3();
-				_Base_.Widget.isWidgetShow = true;
 			},100);
 		}
 		return true;

@@ -87,6 +87,47 @@
 				widget.style.top = top;
 			}
 		},
+		moveWidget: function(from, to){
+			if(to%base.Config.appsPerRow == 0 || from == to){
+				base.Queue.switchQueue(from, from);
+				return false;
+			}
+			var f = [];
+			var t = [];
+			var inc;
+			var pos;
+			for(var i=0; i<2; i++){
+				for(var j=0; j<2; j++){
+					inc = i*4+j;
+					f.push(from+inc);
+					t.push(to+inc);
+				}
+			}
+			for(var i=0; i<f.length; i++){
+				for( var j=0; j<t.length; j++){
+					if(f[i] == t[j]){
+						t[j] = undefined;
+						f[i] = undefined;
+					}
+				}
+			}
+			for(var i=0; i<f.length; i++){				
+				for( var j=0; j<t.length; j++){
+					if(f[i]&&t[j]){
+						base.Queue.switchQueue(f[i], t[j]);
+						if(i == 0){
+							pos = t[j];
+						}
+						f[i] = undefined;
+						t[j] = undefined;
+					}
+				}
+			}
+			pos = pos || from;
+			base.Debug.log("from", from, "to", to, "pos", pos);
+			base.Queue.switchQueue(pos, to);
+			return true;
+		},
 		attachEvent: function(key, openNode,  closeNode, wgt ){
 			var elPos = -1;
 			//Hide the app icon, after open its widget
@@ -94,13 +135,20 @@
 				for(var j=0; j<base.Queue.queue.length; j++){
 					if(base.Queue.queue[j] && base.Queue.queue[j].id === key){
 						elPos = j+1;
+						break;
 						// yield space for widget, pass the widget's size a the optional direction
 					}
-				}
+				}				
+				base.Widget.widgets[key].widget.style.top = openNode.style.top;
+				base.Widget.widgets[key].widget.style.left = openNode.style.left;
+				// the following integer: double app's height plus one line spacing.
+				base.Widget.widgets[key].widget.style.height = 45/_Base_.Page.pagesCount + "%";
+				
 				try{
 					base.App.Yield(elPos, base.Widget.widgets[key].size, "right");
 					wgt.open.func(e);
 					openNode.style.display = "none";
+					closeNode.style.display = "block";
 				}
 				catch(error){
 					console.log(error);
@@ -110,12 +158,12 @@
 			closeNode.addEventListener("dbclick", function(e){
 				openNode.style.top = base.Widget.widgets[key].widget.style.top;
 				openNode.style.left = base.Widget.widgets[key].widget.style.left;
+				
 				try{
 					wgt.close.func(e);
 					// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
 					setTimeout(function(){
-						//that.withdraw(elPos, that.widgets[key].size, "left");						
-						base.Widget.isWidgetShow = false;
+						//that.withdraw(elPos, that.widgets[key].size, "left");	
 						closeNode.style.display = "none";
 						openNode.style.display = "block";
 					},800);

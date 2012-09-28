@@ -25,6 +25,7 @@
 			var div = document.createElement("div");
 			div.style.width = "100%";
 			div.style.height = "16%";
+			div.style.zIndex = "31";
 			div.style.position = "absolute";
 			div.style.bottom = "0";
 			div.style.left = "0";

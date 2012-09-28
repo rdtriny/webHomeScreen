@@ -42,26 +42,12 @@
 				closeDiv.style.display = "none";
 				closeDiv.style.width = "10px";
 				closeDiv.style.height = "10px";
-				closeDiv.style.top = "45%";
-				closeDiv.style.left = "50%";
-				closeDiv.style.marginTop = "-24px";
-				closeDiv.style.marginLeft = "-24px";
+				closeDiv.style.marginTop = "-4px";
+				closeDiv.style.marginLeft = "-4px";
 				closeDiv.style.zIndex = "2";
 				closeDiv.style.background = "url(./images/close.png) top left no-repeat";
 				closeDiv.style.backgroundSize = "100% 100%";				
 				appNode.appendChild(closeDiv);
-				
-				var openDiv = document.createElement("div");
-				openDiv.style.position = "absolute";
-				openDiv.style.display = "none";
-				openDiv.style.width = "10px";
-				openDiv.style.height = "10px";
-				openDiv.style.top = "90%";
-				openDiv.style.left = "90%";
-				openDiv.style.zIndex = "2";
-				openDiv.style.background = "url(./images/enlarge.png) top left no-repeat";
-				openDiv.style.backgroundSize = "100% 100%";				
-				appNode.appendChild(openDiv);
 				
 				var img = document.createElement("img");
 				img.src = app.imgSrc;
@@ -74,15 +60,15 @@
 				var openDiv = document.createElement("div");
 				openDiv.style.position = "absolute";
 				openDiv.style.display = "none";
-				openDiv.style.width = "8px";
-				openDiv.style.height = "8px";
-				openDiv.style.top = "45%";
-				openDiv.style.left = "50%";				
-				openDiv.style.marginTop = "20px";
-				openDiv.style.marginLeft = "20px";
+				openDiv.style.width = "20px";
+				openDiv.style.height = "20px";
+				openDiv.style.bottom = "0";
+				openDiv.style.right = "0";				
+				openDiv.style.marginTop = "4px";
+				openDiv.style.marginLeft = "4px";
 				openDiv.style.zIndex = "10";
 				openDiv.style.background = "url(./images/enlarge.png) top left no-repeat";
-				openDiv.style.backgroundSize = "100% 100%";				
+				openDiv.style.backgroundPosition = "right bottom";				
 				appNode.appendChild(openDiv);
 			}
 			return appNode;
@@ -100,6 +86,9 @@
 			app.style.left = (pos%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
 			app.style.top = Math.floor(pos/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
 			app.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
+		},
+		moveApp: function(from, to){
+			
 		}
 	});
 	
@@ -185,13 +174,13 @@
 				// level 3: can yield to top blank spaces or not?
 				if(str.substr(2,3) === "000"){
 					if(remainder == 0){
-						base.Queue.moveQueue(elPos, elPos-4);
+						base.Queue.switchQueue(elPos, elPos-4);
 						base.Debug.log("right top blank");
 					}
 				}
 				else if(str.substr(4,3) === "000"){
 					if(remainder == 1){
-						base.Queue.moveQueue(elPos, elPos-5);
+						base.Queue.switchQueue(elPos, elPos-5);
 						base.Debug.log("left top blank");
 					}
 				}
@@ -200,7 +189,7 @@
 					// str.substr(*, *) + '0' avoids the match function returns null.
 					if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
 						if(remainder != 1){
-							base.Queue.moveQueue(elPos, elPos-1);
+							base.Queue.switchQueue(elPos, elPos-1);
 							base.Debug.log("right down blank");
 							icons = base.App.Yield.down( icons, elPos, widgetSize ) || icons;
 						}
@@ -233,7 +222,7 @@
 			var vSpace,spaceCount=0;
 			var pos;
 			// if the app is in the 4th column, then stretch to right.
-			if(elPos % base.Config.appsPerRow == 0){			
+			if(elPos % base.Config.appsPerRow == 0){		
 				base.Queue.switchQueue(elPos, elPos-1);
 				elPos -= 1;
 			}
@@ -252,7 +241,7 @@
 					pos -= base.Config.appsPerRow;
 					while(pos>elPos){
 						if(icons[pos-1]){
-							base.Queue.moveQueue(pos, pos+spaceCount * base.Config.appsPerRow);
+							base.Queue.switchQueue(pos, pos+spaceCount * base.Config.appsPerRow);
 						}
 						else{
 							spaceCount ++;
@@ -273,7 +262,7 @@
 					pos -= base.Config.appsPerRow;
 					while(pos>elPos){
 						if(icons[pos-1]){
-							base.Queue.moveQueue(pos, pos+spaceCount*base.Config.appsPerRow);
+							base.Queue.switchQueue(pos, pos+spaceCount*base.Config.appsPerRow);
 						}
 						else{
 							spaceCount ++;
@@ -449,7 +438,7 @@
 				*/
 				base.App.target.style.webkitTransform = "";
 				base.Box.highlight(false);
-			}			
+			}
 			if(base.Tray.Var.actionIn){
 				base.Tray.endToIn( base.Drive.Var.endY );
 			}
@@ -468,18 +457,27 @@
 					var des = base.App.to-1;
 					// drag within one page.
 					if(base.Page.rowIndexMem == base.Page.currentRowIndex){
-						base.Queue.switchQueue(from, base.App.to);
+												
+						if(base.App.target.getAttribute("iWidget")){
+							base.Widget.moveWidget(base.App.from, base.App.to);
+						}
+						else
+							base.Queue.switchQueue(from, base.App.to);
 					}else{
 						// drag to next page: if the desination gets an app,you are denied, else ok.
 						if(base.Queue.queue[des]){
 							base.App.target.style.left = ((from-1)%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
 							base.App.target.style.top = Math.floor((from-1)/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
 						}else{
-							base.Queue.moveQueue(from, base.App.to);
+							if(base.App.target.getAttribute("iWidget"))
+								base.Widget.moveWidget(base.App.from, base.App.to);
+							else
+								base.Queue.switchQueue(from, base.App.to);
 						}
 					}
 					// restroe its default value.
-					base.App.target.style.zIndex = "";					
+					if(base.App.target.getAttribute('iWidget'))
+						base.App.target.style.zIndex = "";					
 				}else{					
 					base.App.target.style.left = ((from-1)%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
 					base.App.target.style.top = Math.floor((from-1)/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
@@ -504,8 +502,15 @@
 			clearTimeout(base.App.timeout2);
 			base.App.timeout2 = setTimeout(function(){
 				if(!base.Tray.Var.actionOut && base.Page.rowIndexMem == base.Page.currentRowIndex && pagey < base.App.iconHeight*4){
-					base.Queue.switchQueue(base.App.from, base.App.to);
-					base.App.from = base.App.to;
+					if(base.App.target.getAttribute("iWidget")){
+						if(base.Widget.moveWidget(base.App.from, base.App.to))							
+							base.Debug.log(base.App.from, base.App.to);
+							base.App.from = base.App.to;
+					}
+					else{
+						base.Queue.switchQueue(base.App.from, base.App.to);
+						base.App.from = base.App.to;
+					}
 				}
 			}, 300);
 		},

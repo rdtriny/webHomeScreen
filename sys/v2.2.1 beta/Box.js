@@ -8,7 +8,7 @@
 		//show whether the app can be dragged to the target location. red for no, green for yes.
 		highlight: function(sideLen){
 			var des = base.App.to - 1, i;
-			if(!base.Box.highlightBox){
+			if(!base.Box.highlightBox && sideLen>1){
 				var div = document.createElement("div");
 				div.style.height = sideLen*0.66 + "px";
 				div.style.width = sideLen*0.66 + "px";
@@ -32,7 +32,8 @@
 					base.Box.highlightBox.style.webkitBoxShadow = "0 0 5px 2px green";
 				}
 			}else{
-				base.Box.highlightBox.style.display = "none";
+				if(base.Box.highlightBox)
+					base.Box.highlightBox.style.display = "none";
 				return "closed";
 			}
 		}

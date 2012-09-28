@@ -7,6 +7,7 @@
 	padding: 0;
 	margin: 0;
 	background: url("../images/cover.jpg") repeat top left;	
+	background-size: 100% auto;
 	-webkit-transition-duration: .2s;
 }
 *{
@@ -19,6 +20,9 @@
 	position:absolute;
 	width: 100%;
 	height: 84%;
+	/*
+	the other 16% is the favourite tray.
+	*/
 	padding: 0;
 	margin: 0;
 	top: 0;
@@ -37,18 +41,20 @@
 	background-size: 100% 100%;
 }
 .icon {
-	width: 25%;
-	height: 25%;
+	/*
+	height is defined in System.js, function refresh.
+	*/
+	width: 20%;
 	position: absolute;
 	float: left;
 	padding: 0;
-	margin: 0;
-	overflow: hidden;
+	margin: 1% 0 0 2.5%;
 	-webkit-transition-duration: 0s;
 	/* the following property is quite important, prevents flicker, sluggish preformance */
 	-webkit-backface-visibility: hidden;
 	transition-property: opacity;
 	-webkit-transition-timing-function: cubic-bezier(0.33,0.66,0.66,1);
+	background-color: #e7e2c4;
 }
 .icon img {
 	width: 48px;
@@ -59,15 +65,22 @@
 	margin-left: -24px;
 	top: 45%;
 	margin-top: -24px;
+	z-index: 1;
 }
 .icon span {
-	color: white;
+	color: gray;
 	position: relative;
 	font-size: 0.8em;
 	text-align: center;
-	top: 70%;
-	line-height: 100%;
-	display: inline-block;
+	top: 75%;
+	font-family: Arial;
+	line-height: 2em;
+	display: block;
+	background-color: #c2b469;
+	height: 25%;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	overflow: hidden;
 }
 @-webkit-keyframes shake{
 	from{

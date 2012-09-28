@@ -30,9 +30,6 @@
 					base.Drive.click(e);
 				}, false);
 				
-				// It's a flag to direct the widgets' action.
-				base.Widget.isWidgetShow = false;
-				
 				// add the favorite tray area.
 				base.Tray.addFixedArea();
 				
@@ -61,10 +58,18 @@
 					icon = apps[i].iconUri;
 				}
 				label = apps[i].label || "LOADING";
-				if(i == 0)
-					base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/weather"});
-				else
-					base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});
+				
+				switch(apps[i].appPackage+"/"+apps[i].appClass){
+					case "com.lge.app.richnote/com.lge.app.richnote.RichNoteList":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/todo.js"});
+						break;
+					case "com.lge.music/com.lge.music.MusicBrowserActivity":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/music.js"});
+						break;
+					default:						
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});
+				}
+				
 			}
 			if(lastBatch === "true" || lastBatch === true){
 				base.System.display();
