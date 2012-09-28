@@ -1,16 +1,16 @@
 !function(){
 	var widgetDiv = document.createElement("div");
 	widgetDiv.style.position = "absolute";
-	widgetDiv.id = "todo";
+	widgetDiv.id = "message";
 	// set a self defined arrtibute 'iWidget', to record which application it belongs to.
-	widgetDiv.setAttribute("iWidget", "com.lge.app.richnote/com.lge.app.richnote.RichNoteList");
+	widgetDiv.setAttribute("iWidget", "com.android.mms/com.android.mms.ui.ConversationList");
 	widgetDiv.style.zIndex = "30";
 	widgetDiv.style.margin = "1% 0 0 2.5%";
 	widgetDiv.style.width = "45%";
 	widgetDiv.style.display = "none";
 	
 	var widgetImg = document.createElement("img");
-	widgetImg.src = "./images/todo.jpg";
+	widgetImg.src = "./images/message.jpg";
 	widgetImg.style.width = "100%";
 	widgetImg.style.height = "100%";
 	// append the img to widgetDiv
@@ -45,14 +45,14 @@
 	}
 	
 	_Base_.Widget.registerWidget({
-		"com.lge.app.richnote/com.lge.app.richnote.RichNoteList":{
-			widget:"todo",
+		"com.android.mms/com.android.mms.ui.ConversationList":{
+			widget:"message",
 			open: {
-				node: "com.lge.app.richnote/com.lge.app.richnote.RichNoteList",
+				node: "com.android.mms/com.android.mms.ui.ConversationList",
 				func: open
 			},
 			close: {
-				node: "todo",
+				node: "message",
 				func: close
 			},
 			size: {

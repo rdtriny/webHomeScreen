@@ -66,6 +66,15 @@
 					case "com.lge.music/com.lge.music.MusicBrowserActivity":
 						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/music.js"});
 						break;
+					case "com.android.mms/com.android.mms.ui.ConversationList":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/message.js"});
+						break;
+					case "com.android.cellbroadcastreceiver/com.android.cellbroadcastreceiver.CellBroadcastListActivity":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/weather.js"});
+						break;
+					case "com.android.gallery3d/com.android.gallery3d.app.Gallery":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/photo.js"});
+						break;
 					default:						
 						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});
 				}
@@ -94,13 +103,14 @@
 				appsPerRow = base.Config.appsPerRow,
 				appsPerColumn = base.Config.appsPerColumn;
 				
-			var icons = container.getElementsByClassName("icon");
+			var icons = base.Queue.queue;
 			if(base.Config.isVertical){
 				container.style.height = 100 * pagesCount+"%";
 				for(var i=0; i<icons.length; i++){
 					base.App.resizeApp(icons[i], i);
 				}
 			}
+			base.Widget.refresh();
 		},		
 		//
 		// a brief version information

@@ -82,10 +82,12 @@
 				return false;
 			}
 		},
-		resizeApp: function(app, pos){			
-			app.style.left = (pos%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
-			app.style.top = Math.floor(pos/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
-			app.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
+		resizeApp: function(app, pos){
+			if(app){
+				app.style.left = (pos%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
+				app.style.top = Math.floor(pos/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
+				app.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
+			}
 		},
 		moveApp: function(from, to){
 			
@@ -105,7 +107,7 @@
 		*/
 		Yield : function(elPos, widgetSize, direction){
 			if(widgetSize && elPos>0){
-				if(widgetSize.width == 2 && widgetSize.width == 2){
+				if(widgetSize.width == 2 && widgetSize.height == 2){
 					//use the block** function , but switch the context to the global system.
 					base.App.Yield.block22(elPos, widgetSize, direction);
 				}
@@ -129,42 +131,41 @@
 				and so on.
 		*/
 		block22 : function(elPos, widgetSize, direction){
-			var icons = base.Queue.queue;	
 			var remainder = elPos % base.Config.appsPerRow;
 			// calculate where to display the widget
 			// level 1: the element is in the first row or not
 			if(elPos > 4){
 				// level 2: the element is in the 1st column or the 4th column or the other two columns.
 				var str = "";
-				if(icons[elPos+3])
+				if(base.Queue.queue[elPos+3])
 					str += '1';
 				else 
 					str += '0';
-				if(icons[elPos+4])
+				if(base.Queue.queue[elPos+4])
 					str += '1';
 				else 
 					str += '0';
-				if(icons[elPos])
+				if(base.Queue.queue[elPos])
 					str += '1';
 				else
 					str += '0';
-				if(icons[elPos-4])
+				if(base.Queue.queue[elPos-4])
 					str += '1';
 				else
 					str += '0';
-				if(icons[elPos-5])
+				if(base.Queue.queue[elPos-5])
 					str += '1';
 				else 
 					str += '0';
-				if(icons[elPos-6])
+				if(base.Queue.queue[elPos-6])
 					str += '1';
 				else
 					str += '0';
-				if(icons[elPos-2])
+				if(base.Queue.queue[elPos-2])
 					str += '1';
 				else
 					str += '0';
-				if(icons[elPos+2])
+				if(base.Queue.queue[elPos+2])
 					str += '1';
 				else
 					str += '0';
@@ -188,26 +189,38 @@
 					// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
 					// str.substr(*, *) + '0' avoids the match function returns null.
 					if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
-						if(remainder != 1){
-							base.Queue.switchQueue(elPos, elPos-1);
-							base.Debug.log("right down blank");
-							icons = base.App.Yield.down( icons, elPos, widgetSize ) || icons;
-						}
+						if(remainder == 1){
+							base.Queue.switchQueue(elPos, elPos+1);
+							elPos += 1;
+						}						
+						base.Debug.log("left down blank");
+						base.App.Yield.down( elPos, widgetSize );
 					}
 					else{
-						if(remainder!=0){
-							base.Debug.log("left down blank");
-							icons = base.App.Yield.down( icons, elPos, widgetSize ) || icons;
+						if(remainder == 0){
+							base.Queue.switchQueue(elPos, elPos-1);
+							elPos -= 1;
 						}
+						base.Debug.log("right down blank");
+						base.App.Yield.down( elPos, widgetSize );
 					}
 				}
 			}
 			else{
-				icons = base.App.Yield.down( icons, elPos, widgetSize ) || icons;
+				base.App.Yield.down( elPos, widgetSize );
 			}
-			// log the new queue of apps.
-			base.Queue.queue = icons;
-		},	
+			
+			var pages = Math.ceil(base.Queue.queue.length/(base.Config.appsPerRow*base.Config.appsPerColumn));
+			if(pages > base.Page.pagesCount){
+				base.Page.addPage(1);
+			}
+		},
+		block14 : function(){
+			
+		},
+		block13 : function(){
+		
+		},
 		/*
 			push the applications which block widget's space downward.
 			according to the widget's width, make a tiny loop each line
@@ -215,12 +228,10 @@
 			from back to forth
 		*/
 		// a function of an object was called , the object was passed to the function as 'this', if the object can't be identified, window was passed just as the following function.
-		down : function (icons, elPos, widgetSize){
-			if(!icons){
-				return false;
-			}
+		down : function (elPos, widgetSize){
+			console.log(elPos);
 			var vSpace,spaceCount=0;
-			var pos;
+			var pos, widgetArray = {}, widgetPos;
 			// if the app is in the 4th column, then stretch to right.
 			if(elPos % base.Config.appsPerRow == 0){		
 				base.Queue.switchQueue(elPos, elPos-1);
@@ -231,17 +242,33 @@
 				if(!i){
 					vSpace = widgetSize.height - 1;
 					pos = elPos + base.Config.appsPerRow;
-					while(spaceCount<vSpace){
-						if(!icons[pos-1]){
+					
+					while(spaceCount<vSpace){						
+						if(!base.Queue.queue[pos-1]){							
 							spaceCount ++;
+							
+							for(var k=0; k<widgetSize.height; k++){
+							
+								for(var j=0; j<widgetSize.width; j++){
+									widgetPos = pos-j-k*base.Config.appsPerRow;
+									if(base.Queue.queue[widgetPos-1] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id].widget.style.display == "block"){										
+										widgetArray[base.Queue.queue[widgetPos-1].id] = widgetPos;
+										break;
+									}
+								}
+							}
 						}
 						pos += base.Config.appsPerRow;
 					}
 					spaceCount = 0;
 					pos -= base.Config.appsPerRow;
 					while(pos>elPos){
-						if(icons[pos-1]){
-							base.Queue.switchQueue(pos, pos+spaceCount * base.Config.appsPerRow);
+						if(base.Queue.queue[pos-1]){
+							if(widgetArray[base.Queue.queue[pos-1].id]){
+								widgetArray[base.Queue.queue[pos-1].id] += spaceCount*base.Config.appsPerRow;
+							}							
+							base.Queue.switchQueue(pos, pos+spaceCount*base.Config.appsPerRow);	
+							//base.Debug.log("app",pos, pos+spaceCount * base.Config.appsPerRow);
 						}
 						else{
 							spaceCount ++;
@@ -253,15 +280,27 @@
 					pos = elPos + i;
 					vSpace = widgetSize.height;
 					while(spaceCount<vSpace){
-						if(!icons[pos-1]){
+						if(!base.Queue.queue[pos-1]){
 							spaceCount ++;
+							for(var k=0; k<widgetSize.height; k++){
+								for(var j=0; j<widgetSize.width; j++){
+									widgetPos = pos-j-k*base.Config.appsPerRow;
+									if(base.Queue.queue[widgetPos-1] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id].widget.style.display == "block"){										
+										widgetArray[base.Queue.queue[widgetPos-1].id] = widgetPos;
+										break;
+									}
+								}
+							}
 						}
 						pos += base.Config.appsPerRow;
 					}
 					spaceCount = 0;
 					pos -= base.Config.appsPerRow;
 					while(pos>elPos){
-						if(icons[pos-1]){
+						if(base.Queue.queue[pos-1]){
+							if(widgetArray[base.Queue.queue[pos-1].id]){
+								widgetArray[base.Queue.queue[pos-1].id] += spaceCount*base.Config.appsPerRow;
+							}							
 							base.Queue.switchQueue(pos, pos+spaceCount*base.Config.appsPerRow);
 						}
 						else{
@@ -272,13 +311,12 @@
 				}
 				spaceCount = 0;
 			}
-			return icons;
-		},
-		block14 : function(){
 			
-		},
-		block13 : function(){
-		
+			for(var i in widgetArray){
+				if(typeof widgetArray[i] == "number" && widgetArray[i] != elPos){
+					base.App.Yield.down( widgetArray[i], {width:2, height:2} );
+				}
+			}
 		}	
 	});
 	
@@ -455,25 +493,14 @@
 				var from = base.App.from;
 				if(typeof(base.App.to)=="number"){
 					var des = base.App.to-1;
-					// drag within one page.
-					if(base.Page.rowIndexMem == base.Page.currentRowIndex){
-												
-						if(base.App.target.getAttribute("iWidget")){
-							base.Widget.moveWidget(base.App.from, base.App.to);
-						}
-						else
-							base.Queue.switchQueue(from, base.App.to);
+					// drag within one page or different pages with avaliable space.
+					if(base.Page.rowIndexMem == base.Page.currentRowIndex || (!base.Queue.queue[des])){												
+						base.App.Drag.doSwitch();
 					}else{
-						// drag to next page: if the desination gets an app,you are denied, else ok.
-						if(base.Queue.queue[des]){
-							base.App.target.style.left = ((from-1)%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
-							base.App.target.style.top = Math.floor((from-1)/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
-						}else{
-							if(base.App.target.getAttribute("iWidget"))
-								base.Widget.moveWidget(base.App.from, base.App.to);
-							else
-								base.Queue.switchQueue(from, base.App.to);
-						}
+						// drag to next page: if the desination gets an app,you are denied.						
+						base.App.target.style.left = ((from-1)%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
+						base.App.target.style.top = Math.floor((from-1)/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
+						
 					}
 					// restroe its default value.
 					if(base.App.target.getAttribute('iWidget'))
@@ -502,17 +529,28 @@
 			clearTimeout(base.App.timeout2);
 			base.App.timeout2 = setTimeout(function(){
 				if(!base.Tray.Var.actionOut && base.Page.rowIndexMem == base.Page.currentRowIndex && pagey < base.App.iconHeight*4){
-					if(base.App.target.getAttribute("iWidget")){
-						if(base.Widget.moveWidget(base.App.from, base.App.to))							
-							base.Debug.log(base.App.from, base.App.to);
-							base.App.from = base.App.to;
-					}
-					else{
-						base.Queue.switchQueue(base.App.from, base.App.to);
-						base.App.from = base.App.to;
-					}
+					base.App.Drag.doSwitch();
 				}
 			}, 300);
+		},
+		doSwitch: function(){
+			// the target is a widget
+			if(base.App.target.getAttribute("iWidget")){
+				if(base.Widget.moveWidget(base.App.from, base.App.to));
+					base.App.from = base.App.to;
+			}
+			// the target is a app
+			else{
+				// the destination is a widget
+				if(base.Widget.isWidget(base.App.to)){
+					base.Queue.backToFrom(base.App.from);
+				}
+				// the destination is a app
+				else{
+					base.Queue.switchQueue(base.App.from, base.App.to);
+					base.App.from = base.App.to;
+				}
+			}
 		},
 		bubbleDragEvent: function(e){
 			var event = document.createEvent("Events");
@@ -529,6 +567,10 @@
 						base.Queue.queue[j].lastChild.style.display = "block";
 					}
 				}
+			}
+			// style widgets to edit mode
+			for(var j in base.Widget.widgets){
+				base.Widget.widgets[j].widget.lastChild.style.display = "block";
 			}
 			
 			// restyle apps in faviourite tray to edit mode.
@@ -549,6 +591,11 @@
 					}
 				}
 			}
+			// restyle widgets to unlock edit mode.
+			for(var j in base.Widget.widgets){
+					base.Widget.widgets[j].widget.lastChild.style.display = "none";
+			}
+			
 			// restyle apps in faviourite tray.
 			for(var i=0; i<icons.length; i++){
 				icons[i].firstChild.style.display = "none";

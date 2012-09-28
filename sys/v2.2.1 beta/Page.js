@@ -36,6 +36,7 @@
 			el.style.webkitTransitionTimingFunction = 'cubic-bezier(0.33,0.66,0.66,1)';
 		},
 		addPage: function(amount){
+			amount = amount || 1;
 			base.Page.pagesCount += amount;
 			base.Page.pagesCount = base.Page.pagesCount || 1;
 			base.System.refresh();

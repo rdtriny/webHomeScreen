@@ -1,16 +1,16 @@
-!function(){
+!function(name, id){
 	var widgetDiv = document.createElement("div");
 	widgetDiv.style.position = "absolute";
-	widgetDiv.id = "todo";
+	widgetDiv.id = name;
 	// set a self defined arrtibute 'iWidget', to record which application it belongs to.
-	widgetDiv.setAttribute("iWidget", "com.lge.app.richnote/com.lge.app.richnote.RichNoteList");
+	widgetDiv.setAttribute("iWidget", id);
 	widgetDiv.style.zIndex = "30";
 	widgetDiv.style.margin = "1% 0 0 2.5%";
 	widgetDiv.style.width = "45%";
 	widgetDiv.style.display = "none";
 	
 	var widgetImg = document.createElement("img");
-	widgetImg.src = "./images/todo.jpg";
+	widgetImg.src = "./images/photo.jpg";
 	widgetImg.style.width = "100%";
 	widgetImg.style.height = "100%";
 	// append the img to widgetDiv
@@ -45,14 +45,14 @@
 	}
 	
 	_Base_.Widget.registerWidget({
-		"com.lge.app.richnote/com.lge.app.richnote.RichNoteList":{
-			widget:"todo",
+		"com.android.gallery3d/com.android.gallery3d.app.Gallery":{
+			widget:name,
 			open: {
-				node: "com.lge.app.richnote/com.lge.app.richnote.RichNoteList",
+				node: id,
 				func: open
 			},
 			close: {
-				node: "todo",
+				node: name,
 				func: close
 			},
 			size: {
@@ -61,4 +61,4 @@
 			}
 		}
 	});
-}();
+}("photo","com.android.gallery3d/com.android.gallery3d.app.Gallery");

@@ -101,6 +101,10 @@
 					inc = i*4+j;
 					f.push(from+inc);
 					t.push(to+inc);
+					if(base.Widget.isWidget(to+inc)){
+						base.Queue.backToFrom(from);
+						return false;
+					}
 				}
 			}
 			for(var i=0; i<f.length; i++){
@@ -128,6 +132,24 @@
 			base.Queue.switchQueue(pos, to);
 			return true;
 		},
+		isWidget: function(pos){
+			var widgetPos;
+			for(var k=0; k<2; k++){
+				for(var j=0; j<2; j++){
+					widgetPos = pos-j-k*base.Config.appsPerRow;
+					/*	
+						Destination space is occupied, and it gets a widget and the widget is now displaying
+						so, the destination is a widget.
+					*/
+					if(base.Queue.queue[widgetPos-1] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id].widget.style.display == "block"){										
+						//  we are not checking the same one,
+						if(base.Queue.queue[widgetPos-1].id != base.App.target.getAttribute("iWidget"))
+							return true;
+					}
+				}
+			}
+			return false;
+		},
 		attachEvent: function(key, openNode,  closeNode, wgt ){
 			var elPos = -1;
 			//Hide the app icon, after open its widget
@@ -146,6 +168,7 @@
 				
 				try{
 					base.App.Yield(elPos, base.Widget.widgets[key].size, "right");
+					base.Debug.log("Widget.js elPos", elPos);
 					wgt.open.func(e);
 					openNode.style.display = "none";
 					closeNode.style.display = "block";
@@ -155,23 +178,27 @@
 				}
 			},false);
 			//show the app icon, when its widget has gone.
-			closeNode.addEventListener("dbclick", function(e){
+			closeNode.lastChild.addEventListener("click", function(e){
 				openNode.style.top = base.Widget.widgets[key].widget.style.top;
 				openNode.style.left = base.Widget.widgets[key].widget.style.left;
 				
 				try{
 					wgt.close.func(e);
 					// widthdraw the space where the widget disappears. arguemnts: widget size, and a optional direction
-					setTimeout(function(){
-						//that.withdraw(elPos, that.widgets[key].size, "left");	
-						closeNode.style.display = "none";
-						openNode.style.display = "block";
-					},800);
+					//that.withdraw(elPos, that.widgets[key].size, "left");	
+					closeNode.style.display = "none";
+					openNode.style.display = "block";
 				}
 				catch(error){
 					console.log(error);
 				}
 			}, false);
+		},
+		refresh: function(){
+			for( var i in base.Widget.widgets){
+				base.Widget.widgets[i].widget.style.height = 45/_Base_.Page.pagesCount + "%";
+				base.Widget.widgets[i].widget.style.top = base.Helper.toNum(base.Widget.widgets[i].widget.style.top)*(base.Page.pagesCount-1)/base.Page.pagesCount + "%";
+			}
 		}
 	});
 	

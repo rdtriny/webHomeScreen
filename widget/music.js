@@ -16,6 +16,21 @@
 	// append the img to widgetDiv
 	widgetDiv.appendChild(widgetImg);
 	
+	var narrowDiv = document.createElement("div");
+	narrowDiv.style.height = "20px";
+	narrowDiv.style.width = "20px";
+	narrowDiv.style.position = "absolute";
+	narrowDiv.style.display = "none";
+	narrowDiv.style.marginTop = "4px";
+	narrowDiv.style.marginLeft = "4px";
+	narrowDiv.style.bottom = "0";
+	narrowDiv.style.right = "0";
+	narrowDiv.style.zIndex = "10";
+	narrowDiv.style.background = "url(./images/narrow.jpg) top left no-repeat";
+	narrowDiv.style.backgroundPosition = "right bottom";
+	// append the img to widgetDiv
+	widgetDiv.appendChild(narrowDiv);
+	
 	// append the widgetDiv to iconsContainer div.
 	document.getElementById("iconsContainer").appendChild(widgetDiv);
 	
