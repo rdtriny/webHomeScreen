@@ -89,8 +89,18 @@
 				app.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
 			}
 		},
-		moveApp: function(from, to){
+		shake: function(target){
+			target.style.webkitTransformOrigin="50% 50%";
+			target.style.webkitAnimationDuration= "150ms";
+			target.style.webkitAnimationName= "shake";
+			target.style.webkitAnimationIterationCount= "2";
 			
+			setTimeout(function(){
+				target.style.webkitTransformOrigin="";
+				target.style.webkitAnimationDuration= "";
+				target.style.webkitAnimationName= "";
+				target.style.webkitAnimationIterationCount= "";
+			}, 5000);
 		}
 	});
 	
@@ -109,12 +119,12 @@
 			if(widgetSize && elPos>0){
 				if(widgetSize.width == 2 && widgetSize.height == 2){
 					//use the block** function , but switch the context to the global system.
-					base.App.Yield.block22(elPos, widgetSize, direction);
+					return base.App.Yield.block22(elPos, widgetSize, direction);
 				}
 				else if(widgetSize.width == 4 && widgetSize.height == 1){
-					base.App.Yield.block14(elPos, widgetSize, direction);
+					return base.App.Yield.block14(elPos, widgetSize, direction);
 				}else if(widgetSize.width == 3 && widgetSize.height == 1){
-					base.App.Yield.block13(elPos, widgetSize, direction);
+					return base.App.Yield.block13(elPos, widgetSize, direction);
 				}
 			}
 		}
@@ -131,69 +141,60 @@
 				and so on.
 		*/
 		block22 : function(elPos, widgetSize, direction){
-			var remainder = elPos % base.Config.appsPerRow;
+			var remainder = elPos % base.Config.appsPerRow, flag=false;
 			// calculate where to display the widget
-			// level 1: the element is in the first row or not
-			if(elPos > 4){
-				// level 2: the element is in the 1st column or the 4th column or the other two columns.
-				var str = "";
-				if(base.Queue.queue[elPos+3])
-					str += '1';
-				else 
-					str += '0';
-				if(base.Queue.queue[elPos+4])
-					str += '1';
-				else 
-					str += '0';
-				if(base.Queue.queue[elPos])
-					str += '1';
-				else
-					str += '0';
-				if(base.Queue.queue[elPos-4])
-					str += '1';
-				else
-					str += '0';
-				if(base.Queue.queue[elPos-5])
-					str += '1';
-				else 
-					str += '0';
-				if(base.Queue.queue[elPos-6])
-					str += '1';
-				else
-					str += '0';
-				if(base.Queue.queue[elPos-2])
-					str += '1';
-				else
-					str += '0';
-				if(base.Queue.queue[elPos+2])
-					str += '1';
-				else
-					str += '0';
-				//make a circle, from head to tail.
-				str += str[0];
+			
+			// level 2: the element is in the 1st column or the 4th column or the other two columns.
+			var str = "";
+			str += base.App.Yield.checkAround(elPos+4);
 				
-				// level 3: can yield to top blank spaces or not?
-				if(str.substr(2,3) === "000"){
-					if(remainder == 0){
-						base.Queue.switchQueue(elPos, elPos-4);
-						base.Debug.log("right top blank");
-					}
+			str += base.App.Yield.checkAround(elPos+5);
+				
+			str += base.App.Yield.checkAround(elPos+1);
+				
+			str += base.App.Yield.checkAround(elPos-3);
+				
+			str += base.App.Yield.checkAround(elPos-4);
+				
+			str += base.App.Yield.checkAround(elPos-5);
+				
+			str += base.App.Yield.checkAround(elPos-1);
+				
+			str += base.App.Yield.checkAround(elPos+3);
+				
+			//make a circle, from head to tail.
+			str += str[0];
+			
+				console.log(str);
+			// level 3: can yield to top blank spaces or not?
+			if(str.substr(2,3) === "000"){
+				if(remainder != 0){
+					base.Queue.switchQueue(elPos, elPos-4);
+					elPos -= 4;
+					base.Debug.log("right top blank");					
+					flag = true;
 				}
-				else if(str.substr(4,3) === "000"){
-					if(remainder == 1){
-						base.Queue.switchQueue(elPos, elPos-5);
-						base.Debug.log("left top blank");
-					}
+			}
+			else if(str.substr(4,3) === "000"){
+				if(remainder != 1){
+					base.Queue.switchQueue(elPos, elPos-5);
+					elPos -= 5;
+					base.Debug.log("left top blank");					
+					flag = true;
 				}
-				else{
-					// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
-					// str.substr(*, *) + '0' avoids the match function returns null.
-					if((str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length){
+			}
+			else{
+				// level 4: compare left/right blank spaces under the element, stretch to more spaces area.
+				// str.substr(*, *) + '0' avoids the match function returns null.					
+				if(!(str.substr(6,3).match(/2/ig)) && !(str.substr(0,3).match(/2/ig))){
+					if( (str.substr(0,3)+'0').match(/0/ig).length < (str.substr(6,3)+'0').match(/0/ig).length ){
 						if(remainder == 1){
 							base.Queue.switchQueue(elPos, elPos+1);
 							elPos += 1;
 						}						
 						base.Debug.log("left down blank");
+						base.Queue.switchQueue(elPos, elPos-1);
+						elPos -= 1;
 						base.App.Yield.down( elPos, widgetSize );
 					}
 					else{
@@ -204,22 +205,54 @@
 						base.Debug.log("right down blank");
 						base.App.Yield.down( elPos, widgetSize );
 					}
+					flag = true;
 				}
-			}
-			else{
-				base.App.Yield.down( elPos, widgetSize );
+				else if(!(str.substr(6,3).match(/2/ig)) && (str.substr(0,3).match(/2/ig))){
+					if(remainder != 1){
+						base.Queue.switchQueue(elPos, elPos-1);
+						elPos -= 1;							
+						base.Debug.log("left down blank");
+						base.App.Yield.down( elPos, widgetSize );						
+						flag = true;
+					}
+				}
+				else if((str.substr(6,3).match(/2/ig)) && !(str.substr(0,3).match(/2/ig))){
+					if(remainder != 0){
+						base.Debug.log("right down blank");
+						base.App.Yield.down( elPos, widgetSize );						
+						flag = true;
+					}
+				}
 			}
 			
 			var pages = Math.ceil(base.Queue.queue.length/(base.Config.appsPerRow*base.Config.appsPerColumn));
 			if(pages > base.Page.pagesCount){
 				base.Page.addPage(1);
 			}
+			return flag;
 		},
 		block14 : function(){
 			
 		},
 		block13 : function(){
 		
+		},
+		checkAround: function(pos){
+			console.log(pos);
+			if(pos < 1)
+				return '2';
+			
+			// widget
+			if(base.Widget.isWidget(pos)){
+				return '2';
+			}
+			// app
+			else if(base.Queue.queue[pos-1]){
+				return '1';
+			}
+			// blank
+			else
+				return '0';
 		},
 		/*
 			push the applications which block widget's space downward.

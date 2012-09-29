@@ -95,13 +95,14 @@
 			var f = [];
 			var t = [];
 			var inc;
-			var pos;
+			var pos,widgetPos;
 			for(var i=0; i<2; i++){
 				for(var j=0; j<2; j++){
 					inc = i*4+j;
 					f.push(from+inc);
 					t.push(to+inc);
-					if(base.Widget.isWidget(to+inc)){
+					widgetPos = base.Widget.isWidget(to+inc);
+					if(widgetPos && base.Queue.queue[widgetPos-1].id != base.App.target.getAttribute("iWidget")){
 						base.Queue.backToFrom(from);
 						return false;
 					}
@@ -142,9 +143,7 @@
 						so, the destination is a widget.
 					*/
 					if(base.Queue.queue[widgetPos-1] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id] && base.Widget.widgets[base.Queue.queue[widgetPos-1].id].widget.style.display == "block"){										
-						//  we are not checking the same one,
-						if(base.Queue.queue[widgetPos-1].id != base.App.target.getAttribute("iWidget"))
-							return true;
+							return widgetPos;
 					}
 				}
 			}
@@ -167,11 +166,15 @@
 				base.Widget.widgets[key].widget.style.height = 45/_Base_.Page.pagesCount + "%";
 				
 				try{
-					base.App.Yield(elPos, base.Widget.widgets[key].size, "right");
-					base.Debug.log("Widget.js elPos", elPos);
-					wgt.open.func(e);
-					openNode.style.display = "none";
-					closeNode.style.display = "block";
+					var isSuccess = base.App.Yield(elPos, base.Widget.widgets[key].size, "right");
+					if( isSuccess === false ){
+						base.App.shake(openNode);
+						console.log("No available space.");						
+					}else{
+						wgt.open.func(e);
+						openNode.style.display = "none";
+						closeNode.style.display = "block";
+					}
 				}
 				catch(error){
 					console.log(error);

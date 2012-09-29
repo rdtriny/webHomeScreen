@@ -84,9 +84,9 @@
 }
 @-webkit-keyframes shake{
 	from{
-		margin-top: 0px;
+		-webkit-transform: translate3d(-5px, 0,0);
 	}
 	to	{
-		margin-top: -10px;
+		-webkit-transform: translate3d(5px, 0,0);
 	}
 }
