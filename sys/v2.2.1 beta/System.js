@@ -75,6 +75,12 @@
 					case "com.android.gallery3d/com.android.gallery3d.app.Gallery":
 						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/photo.js"});
 						break;
+					case "com.android.settings/com.android.settings.Settings":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/settings.js"});
+						break;
+					case "com.lge.clock/com.lge.clock.AlarmClockActivity":
+						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:"./widget/clock.js"});
+						break;	
 					default:						
 						base.App.register({title:label,packageName:apps[i].appPackage+"/"+apps[i].appClass,imgSrc:icon,widget:""});
 				}

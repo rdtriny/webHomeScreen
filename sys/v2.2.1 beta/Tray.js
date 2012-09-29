@@ -54,6 +54,8 @@
 				base.Queue.delQueue(base.App.from);
 				base.container.removeChild(base.App.target);
 				base.App.target = base.Tray.Var.targetMem;
+				// hide the widget open icon
+				base.App.target.lastChild.style.display = "none";
 			}else{
 				base.Queue.switchQueue(base.App.from, base.App.to);
 				base.Tray.tray.removeChild(base.Tray.Var.targetMem);
@@ -99,6 +101,9 @@
 				base.App.target = base.Tray.Var.targetMem;
 				base.Queue.queue[des] = base.App.target;
 				base.App.resizeApp(base.App.target, des);
+				// if the app gets a widget, show open widget icon.
+				if(base.App.target.getAttribute("hasWidget"))
+					base.App.target.lastChild.style.display = "block";
 			}else{
 				if(base.Tray.Var.targetMem)
 					base.container.removeChild(base.Tray.Var.targetMem);
