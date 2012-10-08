@@ -1,3 +1,12 @@
+/*
+ * App Module manages the logic about application. 
+ * 1. app creating
+ * 2. app styling.
+ * 3. app animations, like shake.
+ * 4. Yield logic, affect to each other when widgets are opened.
+ * 5. Drag logic, when dragging apps, apps may move, exchange, relocate and some other functions.
+*/
+
 !function(base){
 		
 	base.App = base.extend(base.App, {
