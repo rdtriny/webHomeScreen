@@ -77,13 +77,19 @@
 		}
 		for(i = 0; i<target.length; i++){
 			var jsFile = target[i];
-			if(jsFile.slice(-3).toLowerCase() !== ".js")
-				jsFile += ".js";
-				
-			var wdt = document.createElement("script");
-			wdt.src = jsFile;
-			wdt.type= "text/javascript";
-			document.head.appendChild(wdt);
+			var module = target[i].match(/(\w+)(?=$|\.js)/i)[1];
+			if(!base[module]){
+				if(jsFile.slice(-3).toLowerCase() !== ".js")
+					jsFile += ".js";
+					
+				var wdt = document.createElement("script");
+				wdt.src = jsFile;
+				wdt.type= "text/javascript";
+				document.head.appendChild(wdt);
+			}
+			else{
+				console.log(module+" moudle has been loaded! Don't need to load it twice.");
+			}
 		}
 	};
 
