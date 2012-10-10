@@ -64,7 +64,7 @@
 	 |			['a.js'].require(); Or _Base_.require('a.js');
 	 |
 	*/
-	Array.prototype.require = base.require = function(file){
+	base.require = function(file){
 		var type = toString.call(this),
 			target = [];
 		if(typeof file == "string")
@@ -92,12 +92,15 @@
 			}
 		}
 	};
-
+	
+	// make require method works as the native method of array, like push, pop, reverse and so on. not enumerable, can't change value, can't deleted.
+	Object.defineProperty(Array.prototype, 'require', {configurable: false, writable: false, enumerable: false, value: base.require });
+	
 	window._Base_ = base;
 	
 	/*
 	 | load all the components one by one.
-	 |		the order of the order of the array donesn't matter.
+	 |		the apps' order in the array donesn't matter.
 	 |		some Key Functions, including: Browser, System, Drive, Page, App, Queue, Widget;
 	*/
 	['./js/Ajax', './js/Debug', './js/DOM', './js/Browser', './js/System', './js/Drive', './js/Page', './js/App', './js/Sidebar', './js/Box', './js/Queue', './js/Widget'
