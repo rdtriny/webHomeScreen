@@ -29,8 +29,6 @@
 			div.style.position = "absolute";
 			div.style.bottom = "0";
 			div.style.left = "0";
-			div.style.backgroundColor = "black";
-			div.style.opacity = "0.6";
 			div.style.borderTop = "1px solid #F0FFF0";
 			div.id = "tray";
 			base.Tray.tray = div;
