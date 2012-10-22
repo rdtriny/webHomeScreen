@@ -94,6 +94,7 @@
 	};
 	
 	// make require method works as the native method of array, like push, pop, reverse and so on. not enumerable, can't change value, can't deleted.
+	// don't pollute the the enumeration, for example, when for( var i in [] ), i can't be 'require'.
 	Object.defineProperty(Array.prototype, 'require', {configurable: false, writable: false, enumerable: false, value: base.require });
 	
 	window._Base_ = base;
@@ -103,8 +104,8 @@
 	 |		the apps' order in the array donesn't matter.
 	 |		some Key Functions, including: Browser, System, Drive, Page, App, Queue, Widget;
 	*/
-	['./js/Ajax', './js/Debug', './js/DOM', './js/Browser', './js/System', './js/Drive', './js/Page', './js/App', './js/Sidebar', './js/Box', './js/Queue', './js/Widget'
-	,'./js/Tray', './js/Notify', './js/Helper', './js/Sound', './js/spriteMovie', './js/Test'].require();
+	/*['./js/Ajax', './js/Debug', './js/DOM', './js/Browser', './js/System', './js/Drive', './js/Page', './js/App', './js/Sidebar', './js/Box', './js/Queue', './js/Widget'
+	,'./js/Tray', './js/Notify', './js/Helper', './js/Sound', './js/spriteMovie', './js/Test'].require();*/
 	
 })(window);
 

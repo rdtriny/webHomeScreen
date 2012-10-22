@@ -174,7 +174,6 @@
 			//make a circle, from head to tail.
 			str += str[0];
 			
-				console.log(str);
 			// level 3: can yield to top blank spaces or not?
 			if(str.substr(2,3) === "000"){
 				if(remainder != 0){
@@ -247,7 +246,6 @@
 		
 		},
 		checkAround: function(pos){
-			console.log(pos);
 			if(pos < 1)
 				return '2';
 			
@@ -271,7 +269,6 @@
 		*/
 		// a function of an object was called , the object was passed to the function as 'this', if the object can't be identified, window was passed just as the following function.
 		down : function (elPos, widgetSize){
-			console.log(elPos);
 			var vSpace,spaceCount=0;
 			var pos, widgetArray = {}, widgetPos;
 			// if the app is in the 4th column, then stretch to right.
@@ -520,7 +517,7 @@
 				base.Box.highlight(false);
 			}
 			if(base.Tray.Var.actionIn){
-				base.Tray.endToIn( base.Drive.Var.endY );
+				base.Tray.endToIn( base.Drive.Var.endY, base.Drive.Var.endX );
 			}
 			else if(base.Tray.Var.actionOut){
 				if(!base.Queue.queue[base.App.to-1]){

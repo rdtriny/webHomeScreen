@@ -36,7 +36,7 @@
 		},
 		
 		ajax:function(url, data, callback){
-			var xmlhttp = new XMLHttpRequest();
+			var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
 			if(this.config.type.toUpperCase() == "POST"){
 				xmlhttp.open(this.config.type, url, this.config.isAsy);			
 				xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");				
@@ -47,7 +47,7 @@
 				xmlhttp.send();
 			}
 			xmlhttp.onreadystatechange = function(){
-				if(xmlhttp.status == 200){
+				if( xmlhttp.readyState == 4 && xmlhttp.status == 200 ){
 					try{
 						if(xmlhttp.responseXML){
 							this.getResponseXML(xmlhttp.responseXML);
@@ -79,7 +79,7 @@
 		
 		//the arguments list are lined by their improtance level.
 		get: function(url,  queryStr, callback, isAsy){
-			var xmlhttp = new XMLHttpRequest(), bool;
+			var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP"), bool;
 			if(typeof isAsy == "boolean")
 				bool = isAsy;
 			else
@@ -89,7 +89,7 @@
 			xmlhttp.open('GET', url, bool);
 			xmlhttp.send();
 			xmlhttp.onreadystatechange = function(){
-				if(xmlhttp.status == 200){
+				if( xmlhttp.readyState == 4 && xmlhttp.status == 200 ){
 					try{
 						if(xmlhttp.responseXML){
 							this.getResponseXML(xmlhttp.responseXML);
@@ -112,7 +112,7 @@
 		},
 		
 		post: function(url, queryStr, callback, isAsy){
-			var xmlhttp = new XMLHttpRequest(), bool;
+			var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP"), bool;
 			if(typeof isAsy == "boolean")
 				bool = isAsy;
 			else
@@ -127,7 +127,7 @@
 			xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 			xmlhttp.send(data);
 			xmlhttp.onreadystatechange = function(){
-				if(xmlhttp.status == 200){
+				if( xmlhttp.readyState == 4 && xmlhttp.status == 200 ){
 					try{
 						if(xmlhttp.responseXML){
 							this.getResponseXML(xmlhttp.responseXML);

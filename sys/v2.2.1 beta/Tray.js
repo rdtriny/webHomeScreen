@@ -16,6 +16,7 @@
 		// some public variables.
 		
 		tray: null,
+		placesMem: {},
 		Var: {
 			targetMem: null,
 			actionIn: false,
@@ -35,7 +36,14 @@
 			document.body.appendChild(div);		
 		},
 		moveInTray: function(){
-			var target = base.App.target.cloneNode(true);
+			var target, id = base.App.target.getAttribute("iWidget");
+			if(id){
+				target = document.getElementById(id).cloneNode(true);
+				target.style.display = "block";
+			}
+			else{
+				target = base.App.target.cloneNode(true);
+			}
 			target.style.top = "0";
 			target.style.height = "100%";
 			target.style.width = "20%";
@@ -47,13 +55,23 @@
 				base.App.to = base.App.from;
 			}
 		},
-		endToIn: function(pagey){
+		endToIn: function(pagey, pagex){
+			var id = base.App.target.getAttribute("iWidget");
 			if(pagey>=base.App.iconHeight*4 && (!base.Tray.checkFull())){
 				base.Queue.delQueue(base.App.from);
-				base.container.removeChild(base.App.target);
+				
+				// if target is widget, and move into tray successfully, remove the related app, not the widget, 
+				// else target is app, remove it directly.
+				if(!id){
+					base.container.removeChild(base.App.target);
+				}else{
+					base.container.removeChild(document.getElementById(id));
+				}
+				
 				base.App.target = base.Tray.Var.targetMem;
 				// hide the widget open icon
-				base.App.target.lastChild.style.display = "none";
+				base.App.target.lastChild.style.display = "none";				
+				base.Tray.arrange(pagex);
 			}else{
 				base.Queue.switchQueue(base.App.from, base.App.to);
 				base.Tray.tray.removeChild(base.Tray.Var.targetMem);
@@ -61,7 +79,6 @@
 			}
 			base.Tray.Var.targetMem = null;
 			base.Tray.Var.actionIn = false;
-			base.Tray.arrange();
 		},
 		checkFull: function(){
 			var icons = base.Tray.tray.getElementsByClassName("icon");
@@ -72,19 +89,25 @@
 			}
 		},
 		//refresh all apps in the tray.
-		arrange: function(){
+		arrange: function(pagex){			
 			var icons = base.Tray.tray.getElementsByClassName("icon");
-			var num = icons.length;
-			var spacing = (100-25*num)/(num+1);
-			for(var i=0; i<num; i++){
-				/*
-				icons[i].style.webkitAnimation = "";
-				*/
-				icons[i].style.webkitTransform = "";
-				icons[i].style.top = "0";
-				icons[i].style.height = "100%";
-				icons[i].style.left = (spacing+25)*i + spacing + "%";
-			}
+			
+			var nth = Math.floor( pagex/base.App.iconWidth );
+			if(nth > 3)
+				nth = 3;
+			else if(nth < 0)
+				nth = 0;
+				
+			base.App.target.style.webkitTransform = "";
+			base.App.target.style.top = "0";
+			base.App.target.style.height = "100%";
+			base.App.target.style.left = 25*nth + "%";
+			
+			/*
+				Important: uncomplished one, 1, move from tray to tray; 2.yield in tray.
+			*/
+			
+			base.Tray.placesMem[base.App.target.id] = nth;
 		},
 		moveOutTray: function(){
 			var target = base.App.target.cloneNode(true);
@@ -107,7 +130,6 @@
 					base.container.removeChild(base.Tray.Var.targetMem);
 			}
 			base.Tray.Var.targetMem = null;
-			base.Tray.arrange();
 			base.Tray.Var.actionOut = false;
 			base.Tray.restoreEvent();
 		},
@@ -127,10 +149,11 @@
 		restoreEvent: function(){
 			var key = base.App.target.id;
 			var widget = base.Widget.widgets[key];
+			
 			// if the target app has a widget, restore open/close event to the widget.
 			if(widget){
 				var openNode = document.getElementById(widget.open.node);
-				var closeNode = document.getElementById(widget.close.node);
+				var closeNode = document.getElementById(widget.close.node);				
 				
 				// find the new location for widget according to its app's location.
 				widget.widget.style.top = base.App.target.style.top;

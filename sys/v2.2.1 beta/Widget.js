@@ -69,11 +69,11 @@
 				base.Widget.widgets[key].open.node = wgt.open.node.id;
 				openNode = wgt.open.node;
 			}
-			if(typeof wgt.close.node == "string"){
+			if(typeof wgt.close.node === "string"){
 				base.Widget.widgets[key].close.node = wgt.close.node;
 				var closeNode = document.getElementById(wgt.close.node);
 				
-			}else if(typeof wgt.close.node == "object" && wgt.close.node.nodeType == 1){
+			}else if(typeof wgt.close.node === "object" && wgt.close.node.nodeType == 1){
 				base.Widget.widgets[key].close.node = wgt.close.node.id;
 				var closeNode = wgt.close.node;
 			}
