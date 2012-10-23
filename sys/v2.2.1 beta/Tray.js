@@ -130,6 +130,11 @@
 						}
 					}
 				}
+				else{
+					// if move out of the tray failed, remove targetMem;
+					if( base.Tray.Var.targetMem )
+						base.container.removeChild(base.Tray.Var.targetMem);
+				}
 			}
 			// to tray
 			else{
