@@ -12,6 +12,7 @@
 	base.App = base.extend(base.App, {
 		// a function which defines the structure of application's div.
 		appStyle: null,
+		target: null,
 		// height,width of the application div.
 		iconWidth: 0,
 		iconHeight: 0,
@@ -92,11 +93,21 @@
 			}
 		},
 		resizeApp: function(app, pos){
+			
+			/*if(isTray){
+				app.style.height = "100%";
+				app.style.top = "0";
+				app.style.left = (pos%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
+				return "tray";
+			}
+			*/
 			if(app){
 				app.style.left = (pos%base.Config.appsPerRow)*(100/base.Config.appsPerRow)+"%";
 				app.style.top = Math.floor(pos/base.Config.appsPerColumn)*100/(base.Page.pagesCount*base.Config.appsPerColumn)+"%";
 				app.style.height = 80/(base.Page.pagesCount*base.Config.appsPerColumn) + "%";
+				return true;
 			}
+			return false;
 		},
 		shake: function(target){
 			target.style.webkitTransformOrigin="50% 50%";
@@ -451,13 +462,14 @@
 				}else{
 					base.App.target.style.left = (pagex-iconWidth/2)+ "px";
 					base.App.target.style.top  = (pagey-iconHeight/2)+base.Page.currentRowIndex*iconHeight + "px";
+					// when move app into the tray, and then move back to iconsContainer without fingers leaving, keep apps moving.
 					if(base.Tray.Var.targetMem){
 						base.Tray.Var.targetMem.style.left = (pagex-iconWidth/2) + "px";
 						base.Tray.Var.targetMem.style.top  = (pagey-iconHeight/2) - iconHeight*base.Config.appsPerColumn+ "px";
 					}
+					
 				}
-			}						
-			if(base.Config.isVertical){
+			
 				// decide if user wants to drag to next page or not.
 				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){
 					clearTimeout(base.App.timeout);
@@ -496,14 +508,13 @@
 			
 			// a green box indicates ok, a red box indicates you can't put application there.
 			if(typeof base.App.to == "number"){
-				base.Box.highlight(iconWidth);			
+				//base.Box.highlight(iconWidth);			
 				base.App.Drag.exchangeOnMove(pagey);
 			}else{				
 				base.Box.highlight(false);	
 			}
 		},
-		dragEnd: function(e){
-				
+		dragEnd: function(e){				
 			clearTimeout(base.App.timeout);
 			clearTimeout(base.App.timeout2);
 			if(!base.App.editMode || !base.App.target){
@@ -525,7 +536,7 @@
 				}
 				// if the destination space has no apps, move the app out of tray to iconsContainer. 
 				// else restore the target's state.
-				base.Tray.endToOut((!base.Queue.queue[base.App.to-1]) && (typeof base.App.to == "number"));
+				base.Tray.endToOut(base.App.to);
 					
 			}
 			else{

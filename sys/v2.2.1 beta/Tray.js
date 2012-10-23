@@ -16,7 +16,7 @@
 		// some public variables.
 		
 		tray: null,
-		placesMem: {},
+		trayApps: [],
 		Var: {
 			targetMem: null,
 			actionIn: false,
@@ -70,8 +70,12 @@
 				
 				base.App.target = base.Tray.Var.targetMem;
 				// hide the widget open icon
-				base.App.target.lastChild.style.display = "none";				
-				base.Tray.arrange(pagex);
+				base.App.target.lastChild.style.display = "none";				var pos = Math.floor(pagex/base.App.iconWidth);
+				base.Tray.yield(pos);
+				base.Tray.trayApps[pos] = base.App.target;
+				// hide the app name  when move the app into the tray.
+				base.App.target.getElementsByTagName("span")[0].style.display = "none";
+				base.Tray.arrange();
 			}else{
 				base.Queue.switchQueue(base.App.from, base.App.to);
 				base.Tray.tray.removeChild(base.Tray.Var.targetMem);
@@ -90,24 +94,15 @@
 		},
 		//refresh all apps in the tray.
 		arrange: function(pagex){			
-			var icons = base.Tray.tray.getElementsByClassName("icon");
-			
-			var nth = Math.floor( pagex/base.App.iconWidth );
-			if(nth > 3)
-				nth = 3;
-			else if(nth < 0)
-				nth = 0;
-				
-			base.App.target.style.webkitTransform = "";
-			base.App.target.style.top = "0";
-			base.App.target.style.height = "100%";
-			base.App.target.style.left = 25*nth + "%";
-			
-			/*
-				Important: uncomplished one, 1, move from tray to tray; 2.yield in tray.
-			*/
-			
-			base.Tray.placesMem[base.App.target.id] = nth;
+			for( var i=0; i<base.Tray.trayApps.length; i++ ){
+				var app = base.Tray.trayApps[i];
+				if( app ){
+					app.style.webkitTransform = "";
+					app.style.top = "0";
+					app.style.height = "100%";
+					app.style.left = 25*i + "%";
+				}
+			}
 		},
 		moveOutTray: function(){
 			var target = base.App.target.cloneNode(true);
@@ -115,22 +110,43 @@
 			base.Tray.Var.targetMem = target;
 		},
 		//delete target from container and modify queue of the apps list.
-		endToOut: function(isSuccess){
-			if(typeof isSuccess == 'boolean' && isSuccess){
-				var des = base.App.to-1;
-				base.Tray.tray.removeChild(base.App.target);
-				base.App.target = base.Tray.Var.targetMem;
-				base.Queue.queue[des] = base.App.target;
-				base.App.resizeApp(base.App.target, des);
-				// if the app gets a widget, show open widget icon.
-				if(base.App.target.getAttribute("hasWidget"))
-					base.App.target.lastChild.style.display = "block";
-			}else{
-				if(base.Tray.Var.targetMem)
+		endToOut: function(to){
+			// to iconsContainer
+			if( base.Drive.Var.endY < base.App.iconHeight*4){
+				if( typeof to == "number" && (!base.Queue.queue[base.App.to-1]) ){
+					var des = base.App.to-1;
+					base.Tray.tray.removeChild(base.App.target);
+					base.App.target = base.Tray.Var.targetMem;
+					base.Queue.queue[des] = base.App.target;
+					base.App.resizeApp(base.App.target, des);
+					// if the app gets a widget, show open widget icon.
+					if(base.App.target.getAttribute("hasWidget"))
+						base.App.target.lastChild.style.display = "block";
+					
+					base.App.target.getElementsByTagName("span")[0].style.display = "block";
+					for( var i=0; i<4; i++ ){
+						if( base.Tray.trayApps[i] && base.Tray.trayApps[i].id == base.App.target.id ){
+							base.Tray.trayApps[i] = undefined;
+						}
+					}
+				}
+			}
+			// to tray
+			else{
+				var to = Math.floor(base.Drive.Var.endX/base.App.iconWidth);
+				for( var i=0; i<4; i++){
+					if(base.Tray.trayApps[i] && base.Tray.trayApps[i].id == base.App.target.id){
+						var from = i;
+					}
+				}
+				if( typeof to == "number" && typeof from == "number"){
+					base.Tray.switchPos(from, to);
+				}
+				if( base.Tray.Var.targetMem )
 					base.container.removeChild(base.Tray.Var.targetMem);
 			}
+			base.Tray.arrange();
 			base.Tray.Var.targetMem = null;
-			base.Tray.Var.actionOut = false;
 			base.Tray.restoreEvent();
 		},
 		isActionOut: function(target){
@@ -162,6 +178,46 @@
 				//restore the open event and close event to the app& widget.
 				base.Widget.attachEvent(key, openNode, closeNode, widget);
 			}
+		},
+		yield: function(toPos){
+			if(!base.Tray.trayApps[toPos]){
+				return true;
+			}
+			var blank = -1;
+			for(var i=toPos; i>=0; i--){
+				if(!base.Tray.trayApps[i]){
+					blank = i;
+				}
+			}
+			if(blank != -1){
+				for( i=blank+1; i<=toPos; i++ ){
+					base.Tray.switchPos(i, i-1);
+				}
+			}
+			else{
+				for(i=toPos+1; i<4; i++){
+					if(!base.Tray.trayApps[i]){
+						blank = i;
+					}
+				}
+				if(blank != -1){
+					for( i=blank; i>toPos; i-- ){
+						base.Tray.switchPos(i, i-1);
+					}
+				}
+				else{
+					return false;
+				}
+			}
+			return true;
+		},
+		switchPos: function(from, to){
+			if(from == to)
+				return false;
+			var tmp = base.Tray.trayApps[from];
+			base.Tray.trayApps[from] = base.Tray.trayApps[to];
+			base.Tray.trayApps[to] = tmp;
+			return true;
 		}
 	});	
 	
