@@ -471,7 +471,7 @@
 				}
 			
 				// decide if user wants to drag to next page or not.
-				if(pagey>iconHeight*3.5 && pagey<iconHeight*4){
+				if(pagey>iconHeight*3.8 && pagey<iconHeight*4){
 					clearTimeout(base.App.timeout);
 					base.App.timeout = setTimeout(function(){
 						if(base.Page.currentRowIndex+1 < base.Page.pagesCount*base.Config.appsPerColumn){
@@ -486,7 +486,7 @@
 						}
 					}, 1000);
 				}
-				else if(pagey>=iconHeight*4){
+				else if(pagey>iconHeight*4){
 					clearTimeout(base.App.timeout);
 					// !that.actionIn : only move the app into the tray once. deny the other request.
 					// !that.actionOut: the target app node is not in the tray
@@ -508,7 +508,7 @@
 			
 			// a green box indicates ok, a red box indicates you can't put application there.
 			if(typeof base.App.to == "number"){
-				//base.Box.highlight(iconWidth);			
+				base.Box.highlight(iconWidth);			
 				base.App.Drag.exchangeOnMove(pagey);
 			}else{				
 				base.Box.highlight(false);	
