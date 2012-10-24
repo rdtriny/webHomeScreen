@@ -40,6 +40,7 @@
 			base.Page.pagesCount += amount;
 			base.Page.pagesCount = base.Page.pagesCount || 1;
 			base.System.refresh();
+			base.Sidebar.resizeSidebar(base.Page.pagesCount);
 		},		
 		// move background image.
 		moveBG : function(isMovable, coor){

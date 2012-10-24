@@ -33,7 +33,7 @@
 			}else{
 				setTimeout(function(){
 					base.Sidebar.sidebar.style.display = "none";
-				},1000);
+				},3000);
 			}
 		},
 		//change sidebar's position.
@@ -43,6 +43,9 @@
 				var containerH = document.getElementById("iconsContainer").clientHeight;
 				sidebar.style.top = 100*top/containerH + "%";
 			}
+		},
+		resizeSidebar: function(pagesCount){
+			base.Sidebar.sidebar.style.height = appScreen.clientHeight/pagesCount + "px";
 		}
 	});
 	
