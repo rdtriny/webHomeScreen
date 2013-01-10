@@ -32,29 +32,29 @@
 				else if(isAsy == 'false')
 					base.Ajax.config.isAsy = false;
 			}
-			return this;
+			return base.Ajax;
 		},
 		
 		ajax:function(url, data, callback){
-			var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
-			if(this.config.type.toUpperCase() == "POST"){
-				xmlhttp.open(this.config.type, url, this.config.isAsy);			
+			var xmlhttp = base.Ajax.getXHR();
+			if(base.Ajax.config.type.toUpperCase() == "POST"){
+				xmlhttp.open(base.Ajax.config.type, url, base.Ajax.config.isAsy);			
 				xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");				
 				xmlhttp.send(data);
 			}else{
 				url = encodeURI(url + '?' + data);
-				xmlhttp.open(this.config.type, url, this.config.isAsy);				
+				xmlhttp.open(base.Ajax.config.type, url, base.Ajax.config.isAsy);				
 				xmlhttp.send();
 			}
 			xmlhttp.onreadystatechange = function(){
 				if( xmlhttp.readyState == 4 && xmlhttp.status == 200 ){
 					try{
-						if(xmlhttp.responseXML){
-							this.getResponseXML(xmlhttp.responseXML);
+						if(xmlhttp.getResponseHeader('Content-Type') == "text/xml"){
+							base.Ajax.getResponseXML(xmlhttp.responseXML);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseXML);
 						}else if(xmlhttp.responseText){
-							this.getResponseStr(xmlhttp.responseText);
+							base.Ajax.getResponseStr(xmlhttp.responseText);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseText);
 						}
@@ -63,23 +63,25 @@
 						}
 					}
 					catch(message){
-						debug.log(message);
+						console.log(message);
 					}
 				}
-			}.bind(base.Ajax);
+			};
 		},
 		
-		getResponseStr: function(str){			
+		getResponseStr: function(str){
+			console.log("STRING:")
 			console.log(str);
 		},
 		
 		getResponseXML: function(xml){
-			console.log(xml.getElementsByTagName('*')[0].nodeValue);
+			console.log("XML:");
+			console.log(xml.getElementsByTagName('*'));
 		},
 		
 		//the arguments list are lined by their improtance level.
 		get: function(url,  queryStr, callback, isAsy){
-			var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP"), bool;
+			var xmlhttp = base.Ajax.getXHR(), bool;
 			if(typeof isAsy == "boolean")
 				bool = isAsy;
 			else
@@ -91,12 +93,12 @@
 			xmlhttp.onreadystatechange = function(){
 				if( xmlhttp.readyState == 4 && xmlhttp.status == 200 ){
 					try{
-						if(xmlhttp.responseXML){
-							this.getResponseXML(xmlhttp.responseXML);
+						if(xmlhttp.getResponseHeader('Content-Type') == "text/xml"){
+							base.Ajax.getResponseXML(xmlhttp.responseXML);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseXML);
 						}else if(xmlhttp.responseText){
-							this.getResponseStr(xmlhttp.responseText);
+							base.Ajax.getResponseStr(xmlhttp.responseText);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseText);
 						}
@@ -105,14 +107,14 @@
 						}
 					}
 					catch(message){
-						debug.log(message);
+						console.log("GET method: "+message);
 					}
 				}
-			}.bind(base.Ajax);
+			};
 		},
 		
 		post: function(url, queryStr, callback, isAsy){
-			var xmlhttp = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP"), bool;
+			var xmlhttp = base.Ajax.getXHR(), bool;
 			if(typeof isAsy == "boolean")
 				bool = isAsy;
 			else
@@ -129,12 +131,12 @@
 			xmlhttp.onreadystatechange = function(){
 				if( xmlhttp.readyState == 4 && xmlhttp.status == 200 ){
 					try{
-						if(xmlhttp.responseXML){
-							this.getResponseXML(xmlhttp.responseXML);
+						if(xmlhttp.getResponseHeader('Content-Type') == "text/xml"){
+							base.Ajax.getResponseXML(xmlhttp.responseXML);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseXML);
 						}else if(xmlhttp.responseText){
-							this.getResponseStr(xmlhttp.responseText);
+							base.Ajax.getResponseStr(xmlhttp.responseText);
 							if(typeof callback == 'function')
 								callback(xmlhttp.responseText);
 						}
@@ -143,12 +145,33 @@
 						}
 					}
 					catch(message){
-						debug.log(message);
+						console.log(message);
 					}
 				}
-			}.bind(base.Ajax);
+			};
+		},
+		
+		getXHR: function(){
+			var xhrObj;
+			try {
+				xhrObj = new XMLHttpRequest();
+			} catch (e) {
+			   var aTypes = ["Msxml2.XMLHTTP.6.0", "Msxml2.XMLHTTP.3.0", "Msxml2.XMLHTTP", "Microsoft.XMLHTTP"];
+			   var len = aTypes.length;
+			   for (var i = 0; i < len; i++) {
+				   try {
+					   xhrObj = new ActiveXObject(aTypes[i]);
+				   } catch (e) {
+					   continue;
+				   }
+				   break;
+			   }
+			}
+			finally {
+			   return xhrObj;
+			}
 		}
 	});
 	
-	_Base_ = base;
-}(_Base_);
+	Base = base;
+}(Base);
