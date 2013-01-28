@@ -173,5 +173,5 @@
 		}
 	});
 	
-	Base = base;
-}(Base);
+	_Base_ = base;
+}(_Base_);
